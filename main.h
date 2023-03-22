@@ -5,8 +5,6 @@ typedef struct cell {
 
 typedef Cell *List;
 
-static char template[] = "/tmp/hashed_file_XXXXXX";
-
 //exo1
 int hashFile(char *source, char *dest);
 

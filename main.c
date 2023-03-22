@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include "main.h"
 
+static char template[] = "/tmp/hashed_file_XXXXXX";
+
 int hashFile(char *source, char *dest) {
     char cmd[100];
     sprintf(cmd, "sha256sum < %s > %s", source, dest);
