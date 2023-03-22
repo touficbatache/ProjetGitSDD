@@ -2,12 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-typedef struct cell {
-    char *data;
-    struct cell *next;
-} Cell;
-typedef Cell *List;
+#include "main.h"
 
 static char template[] = "/tmp/hashed_file_XXXXXX";
 
