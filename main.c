@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h> 
 #include "main.h"
 
+//Exo1
 static char template[] = "/tmp/hashed_file_XXXXXX";
 
 int hashFile(char *source, char *dest) {
@@ -32,6 +34,7 @@ char *sha256file(char *file) {
     return buffer;
 }
 
+//Exo2
 List *initList() {
     return malloc(sizeof(List));
 }
@@ -138,6 +141,29 @@ List *ftol(char *path) {
     return stol(line);
 }
 
+//Exo3
+List* listdir(char* root_dir){
+    List* result = initList();
+    DIR* dp = opendir(root_dir);
+    struct dirent* ep;
+    if ( dp != NULL ) {
+        while (( ep = readdir (dp)) != NULL ) {
+            Cell* newC = buildCell(ep->d_name);
+            insertFirst(result,newC);
+        }
+    }
+    return result;
+}
+
+int file_exists(char *file){
+    char* currDir = (char*)malloc(sizeof(char)*1000);
+    strcpy(currDir,system("pwd"));
+    if(searchList(listdir(currDir),file)){
+        return 1 ;
+    }
+    return 0;
+}
+
 int main() {
     char *hash = sha256file("test.txt");
     printf("\n Data read back from temporary file is [%s]\n", hash);
@@ -155,9 +181,14 @@ int main() {
     List *l2 = stol(stringList);
     printf("List2 data is [%s]\n", ltos(l2));
 
-    ltof(l, "testingC.txt");
-    List *l3 = ftol("testingC.txt");
-    printf("List3 data is [%s]\n", ltos(l3));
+    // ltof(l, "testingC.txt");
+    // List *l3 = ftol("testingC.txt");
+    // printf("List3 data is [%s]\n", ltos(l3));
 
+    List *l04 = listdir("/users/Etu5/28725545/LU2IN006");
+    printf("List04 data is [%s]\n", ltos(l04));
+
+    printf("Attendu : 0\tObtenu : %d\n",searchList("/users/Etu5/28725545/LU2IN006","bday.py"));
+    printf("Attendu : 1\tObtenu : %d\n",searchList("/users/Etu5/28725545/Document","bday.py"));
     return 0;
 }

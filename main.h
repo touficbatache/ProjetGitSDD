@@ -32,3 +32,8 @@ void ltof(List *L, char *path);
 char *magic_reallocating_fgets(char **bufp, size_t *sizep, FILE *fp);
 
 List *ftol(char *path);
+
+//exo3
+List* listdir(char* root_dir);
+
+int file_exists(char *file);
