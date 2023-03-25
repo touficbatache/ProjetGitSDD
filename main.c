@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "main.h"
+#include <dirent.h>
 
 static char template[] = "/tmp/hashed_file_XXXXXX";
 
