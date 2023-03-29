@@ -9,5 +9,6 @@
 
 /.idea
 
-testingC.txt
+/*.txt
+!/test.txt
 /main.dSYM
