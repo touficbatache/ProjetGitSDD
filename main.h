@@ -5,6 +5,18 @@ typedef struct cell {
 
 typedef Cell *List;
 
+typedef struct {
+    char *name;
+    char *hash;
+    int mode;
+} WorkFile;
+
+typedef struct {
+    WorkFile *tab;
+    int size;
+    int n;
+} WorkTree;
+
 //exo1
 int hashFile(char *source, char *dest);
 
@@ -29,11 +41,30 @@ List *stol(char *s);
 
 void ltof(List *L, char *path);
 
-char *magic_reallocating_fgets(char **bufp, size_t *sizep, FILE *fp);
-
 List *ftol(char *path);
 
 //exo3
 List* listdir(char* root_dir);
 
 int file_exists(char *file);
+
+//exo4
+WorkFile *createWorkFile(char *name);
+
+char *wfts(WorkFile *wf);
+
+WorkFile *stwf(char *ch);
+
+WorkTree *initWorkTree();
+
+int inWorkTree(WorkTree *wt, char *name);
+
+int appendWorkTree(WorkTree *wt, char *name, char *hash, int mode);
+
+char *wtts(WorkTree *wt);
+
+WorkTree *stwt(char *str);
+
+int wttf(WorkTree *wt, char *file);
+
+WorkTree *ftwt(char *file);
