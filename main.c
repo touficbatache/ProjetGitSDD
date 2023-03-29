@@ -168,6 +168,8 @@ int file_exists(char *file) {
     return 0;
 }
 
+// Exo4
+
 WorkFile *createWorkFile(char *name) {
     WorkFile *workFile = malloc(sizeof(WorkFile));
 
