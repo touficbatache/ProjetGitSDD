@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h>
 #include "main.h"
 
 #define FILE_SIZE 1000
 #define WORKTREE_SIZE 10
+
+//Exo1
 
 int hashFile(char *source, char *dest) {
     char cmd[100];
@@ -34,8 +37,10 @@ char *sha256file(char *file) {
     return buffer;
 }
 
+//Exo2
+
 List *initList() {
-    List *l = malloc(sizeof(List));
+    List * l = malloc(sizeof(List));
 
     if (l == NULL) {
         printf("Malloc failure");
@@ -112,7 +117,7 @@ Cell *searchList(List *l, char *str) {
 }
 
 List *stol(char *s) {
-    List *l = initList();
+    List * l = initList();
     char *cellChar = strtok(s, "|");
     while (cellChar != NULL) {
         insertFirst(l, buildCell(cellChar));
@@ -137,6 +142,30 @@ List *ftol(char *path) {
     fclose(fp);
 
     return stol(line);
+}
+
+//Exo3
+
+List *listdir(char *root_dir) {
+    List * result = initList();
+    DIR *dp = opendir(root_dir);
+    struct dirent *ep;
+    if (dp != NULL) {
+        while ((ep = readdir(dp)) != NULL) {
+            Cell *newC = buildCell(ep->d_name);
+            insertFirst(result, newC);
+        }
+    }
+    return result;
+}
+
+int file_exists(char *file) {
+    char *currDir = (char *) malloc(sizeof(char) * 1000);
+    strcpy(currDir, system("pwd"));
+    if (searchList(listdir(currDir), file)) {
+        return 1;
+    }
+    return 0;
 }
 
 WorkFile *createWorkFile(char *name) {
@@ -180,7 +209,7 @@ WorkFile *stwf(char *ch) {
 }
 
 WorkTree *initWorkTree() {
-    WorkTree *workTree = malloc(sizeof(WorkTree));
+    WorkTree * workTree = malloc(sizeof(WorkTree));
 
     if (workTree == NULL) {
         printf("Malloc failure");
@@ -240,7 +269,7 @@ char *wtts(WorkTree *wt) {
 }
 
 WorkTree *stwt(char *ch) {
-    WorkTree *wt = initWorkTree();
+    WorkTree * wt = initWorkTree();
 
     char *wfs = strtok(ch, "\n");
     while (wfs != NULL) {
@@ -288,7 +317,7 @@ int main() {
     char *hash = sha256file(fileName);
     printf("Data read back from temporary file is [%s]\n", hash);
 
-    List *l = initList();
+    List * l = initList();
     insertFirst(l, buildCell("world"));
     insertFirst(l, buildCell("Hello"));
     char *stringList = ltos(l);
@@ -297,13 +326,19 @@ int main() {
     printf("Element at index 0 is [%s]\n", ctos(listGet(l, 0)));
     printf("Element at index 1 is [%s]\n", ctos(listGet(l, 1)));
 
-    List *l2 = stol(stringList);
+    List * l2 = stol(stringList);
     printf("List2 data is [%s]\n", ltos(l2));
 
     char *fileNameSaveList = "testingC.txt";
     ltof(l, fileNameSaveList);
-    List *l3 = ftol(fileNameSaveList);
+    List * l3 = ftol(fileNameSaveList);
     printf("List3 data is [%s]\n", ltos(l3));
+
+    List * l04 = listdir("/users/Etu5/28725545/LU2IN006");
+    printf("List04 data is [%s]\n", ltos(l04));
+
+    printf("Attendu : 0\tObtenu : %d\n", searchList("/users/Etu5/28725545/LU2IN006", "bday.py"));
+    printf("Attendu : 1\tObtenu : %d\n", searchList("/users/Etu5/28725545/Document", "bday.py"));
 
     WorkFile *wf = createWorkFile("Test work file");
     char *wfs = wfts(wf);
@@ -311,7 +346,7 @@ int main() {
     WorkFile *wf2 = stwf(wfs);
     printf("Cloned WorkFile : %s\n\n", wfts(wf2));
 
-    WorkTree *wt = initWorkTree();
+    WorkTree * wt = initWorkTree();
     printf("Initialized empty WorkTree.\n");
     if (appendWorkTree(wt, fileName, hash, 777) == 0) {
         printf("Successfully added \"%s\" to WorkTree.\n", fileName);
@@ -322,7 +357,7 @@ int main() {
 
     char *wts = wtts(wt);
     printf("\nCurrent WorkTree :\n%s\n", wts);
-    WorkTree *wt2 = stwt(wts);
+    WorkTree * wt2 = stwt(wts);
     printf("Cloned WorkTree :\n%s\n\n", wtts(wt2));
 
     char *fileNameSaveWorkTree = "work_tree_save.txt";
@@ -331,7 +366,7 @@ int main() {
     printf("Done!\n");
 
     printf("Reading it back to test...\n");
-    WorkTree *wtReadFromFile = ftwt(fileNameSaveWorkTree);
+    WorkTree * wtReadFromFile = ftwt(fileNameSaveWorkTree);
     printf("\nRead WorkTree :\n%s\n", wtts(wtReadFromFile));
 
 //    TODO: free allocated memory

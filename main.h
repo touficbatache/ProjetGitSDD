@@ -43,6 +43,11 @@ void ltof(List *L, char *path);
 
 List *ftol(char *path);
 
+//exo3
+List* listdir(char* root_dir);
+
+int file_exists(char *file);
+
 //exo4
 WorkFile *createWorkFile(char *name);
 
