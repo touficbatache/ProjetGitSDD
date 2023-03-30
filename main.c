@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include "main.h"
 #include <dirent.h>
 
+
+//Exo 1
 static char template[] = "/tmp/hashed_file_XXXXXX";
 
 int hashFile(char *source, char *dest) {
@@ -33,13 +36,15 @@ char *sha256file(char *file) {
     return buffer;
 }
 
+//Exo 2
 List *initList() {
     return malloc(sizeof(List));
 }
 
 Cell *buildCell(char *ch) {
     Cell *cell = malloc(sizeof(Cell));
-    cell->data = ch;
+    cell->data = malloc(sizeof(char)*1000);
+    strcpy(cell->data, ch);
     cell->next = NULL;
     return cell;
 }
@@ -62,7 +67,7 @@ char *ltos(List *l) {
     }
     strLen -= 1;
 
-    char *str = malloc(sizeof(char) * strLen);
+    char *str = malloc(sizeof(char)*strLen);
     tmp = *l;
     while (tmp) {
         if (strlen(str) > 0) {
@@ -98,8 +103,8 @@ Cell *searchList(List *l, char *str) {
 }
 
 List *stol(char *s) {
-    List *l = initList();
-    char *cellChar = strtok(s, "|");
+    List* l = initList();
+    char* cellChar = strtok(s, "|");
     while (cellChar != NULL) {
         insertFirst(l, buildCell(cellChar));
         cellChar = strtok(NULL, "|");
@@ -139,11 +144,96 @@ List *ftol(char *path) {
     return stol(line);
 }
 
+//Exo 3
+List* listdir ( char* root_dir ) {
+    DIR * dp ;
+    struct dirent * ep ;
+    List * L = initList () ;
+    *L = NULL ;
+    Cell * temp_cell ;
+    dp = opendir( root_dir ) ;
+    if ( dp != NULL ){
+        while (( ep = readdir ( dp ) ) != NULL ){
+            temp_cell = buildCell ( ep -> d_name ) ;
+            insertFirst (L , temp_cell ) ;
+            List ptr = *L ;
+            while ( ptr != NULL ) {
+                ptr = ptr->next ;
+            }
+        }
+    (void)closedir(dp) ;
+    }
+    else{
+        perror( "Ouverture impossible" ) ;
+        return NULL ;
+    }
+    return L ;
+}
+
+int file_exists(char *file) { // à corriger :(
+    List* list = listdir(".");
+    if(!list){
+        printf("Erreur listdir\".\" \n");
+        return 0 ;
+    }
+
+    Cell* current = *list;
+
+    while (current != NULL) {
+        if (strcmp(current->data, file) == 0) {
+            return 1;
+        }
+        current = current->next;
+    }
+
+    return 0;
+}
+
+void cp(char* to, char* from) {
+    FILE* source = fopen(from, "r");
+    if (source == NULL) {
+        printf("Erreur: Le fichier source n'existe pas\n");
+        return;
+    }
+    FILE* dest = fopen(to, "w");
+    if (dest == NULL) {
+        printf("Erreur: Fichier destination impossible à ouvrir\n");
+        return;
+    }
+    char line[1024];
+    while (fgets(line, 1024, source) != NULL) {
+        fputs(line, dest);
+    }
+    fclose(source);
+    fclose(dest);
+}
+
+char* hashToPath(char* hash) {
+    char* path = malloc(strlen(hash) + 2);
+    path[0] = hash[0];
+    path[1] = '/';
+    path[2] = hash[1];
+    path[3] = hash[2];
+    path[4] = '/';
+    path[5] = '\0';
+    strcat(path, hash);
+    return path;
+}
+
+void blobFile(char* file) {
+    char command[1024];
+    snprintf(command, sizeof(command), "mkdir -p snapshots && cp %s snapshots/%s", file, file);
+    system(command);
+}
+
+
 int main() {
+    // Test exo1
     char *hash = sha256file("test.txt");
     printf("\n Data read back from temporary file is [%s]\n", hash);
     free(hash);
 
+    // Test exo2
     List *l = initList();
     insertFirst(l, buildCell("world"));
     insertFirst(l, buildCell("Hello"));
@@ -156,9 +246,14 @@ int main() {
     List *l2 = stol(stringList);
     printf("List2 data is [%s]\n", ltos(l2));
 
-    ltof(l, "testingC.txt");
+    /*ltof(l, "testingC.txt");
     List *l3 = ftol("testingC.txt");
-    printf("List3 data is [%s]\n", ltos(l3));
+    printf("List3 data is [%s]\n", ltos(l3));*/
+
+    // Test exo3
+    //List* listfichiers = listdir("/home/zahra/LU2IN006");
+    //printf("Liste noms fichiers is [%s]\n", ltos(listfichiers));
+    //printf("Existence du fichier test.txt :%d\n", file_exists("projet"));
 
     return 0;
 }
