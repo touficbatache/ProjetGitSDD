@@ -208,23 +208,31 @@ void cp(char* to, char* from) {
     fclose(dest);
 }
 
-char* hashToPath(char* hash) {
-    char* path = malloc(strlen(hash) + 2);
-    path[0] = hash[0];
-    path[1] = '/';
-    path[2] = hash[1];
-    path[3] = hash[2];
-    path[4] = '/';
-    path[5] = '\0';
-    strcat(path, hash);
-    return path;
+char* hashToPath ( char * hash ) {
+    char* dir = malloc ((strlen(hash) + 1 )*sizeof (char)) ;
+    dir[0] = hash [0];
+    dir[1] = hash [1];
+    dir[2] = '/' ;
+    int i ;
+    for ( i = 3; i<=strlen(hash) ; i++) {
+        dir [ i ] = hash [i - 1];
+    }
+    dir[i] = '\0 ' ;
+    return dir ;
 }
 
-void blobFile(char* file) {
-    char command[1024];
-    snprintf(command, sizeof(command), "mkdir -p snapshots && cp %s snapshots/%s", file, file);
-    system(command);
-}
+void blobFile ( char* file ) {
+    char* hash = sha256file(file) ;
+    char* ch2 = strdup(hash) ;
+    ch2 [2] = '\0' ;
+    if (!file_exists(ch2)) {
+        char buff[100];
+        sprintf (buff , "mkdir %s" ,ch2 ) ;
+        system (buff) ;
+    }
+    char* ch = hashToPath(hash) ;
+    cp(ch, file) ;
+    }
 
 
 int main() {
