@@ -3,7 +3,7 @@ typedef struct cell {
     struct cell *next;
 } Cell;
 
-typedef Cell *List;
+typedef Cell* List;
 
 //exo1
 int hashFile(char *source, char *dest);
