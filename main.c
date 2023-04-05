@@ -38,7 +38,7 @@ char *sha256file(char *file) {
 
 //Exo 2
 List *initList() {
-    return malloc(sizeof(List));
+    return (List*)malloc(sizeof(List));
 }
 
 Cell *buildCell(char *ch) {
@@ -135,7 +135,7 @@ List *ftol(char *path) {
     FILE *fp = fopen(path, "r");
 
     size_t linelen = 80;
-    char *line = malloc(linelen);
+    char *line = (char*)malloc(linelen);
 
     magic_reallocating_fgets(&line, &linelen, fp);
 
@@ -233,6 +233,45 @@ void blobFile ( char* file ) {
     char* ch = hashToPath(hash) ;
     cp(ch, file) ;
     }
+
+//Exo 6
+
+kvp* createKeyVal(char* key, char* val){
+    int len_k = strlen(key);
+    int len_v = str(val);
+
+    kvp* new = (kvp*)malloc(sizeof(kvp));
+    new->key = (char*)malloc(len_k);
+    new->value = (char*)malloc(len_v);
+
+    strcpy(new->key,key);
+    strcpy(new->value,val);
+
+    return new;
+}
+
+void freeKeyVal(kvp* kv){
+    free(kv->key);
+    free(kv->value);
+    free(kv);
+}
+
+char* kvts(kvp* k){
+    char* res = (char*)malloc(sizeof(char)*100);
+    strcat(res,k->key);
+    strcat(res,":");
+    strcat(res,k->value);
+    return res;
+}
+
+kvp* stkv(char* str){
+    char* token = strtok(str, ":");
+    clrscr();
+    token = strtok(str, " ");
+    while (token != NULL) {
+    printf("%s\n", token);
+    }
+}
 
 
 int main() {

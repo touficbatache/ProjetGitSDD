@@ -5,6 +5,19 @@ typedef struct cell {
 
 typedef Cell* List;
 
+typedef struct key_value_pair {
+    char * key ;
+    char * value ;
+}kvp;
+
+typedef struct hash_table {
+    kvp ** T ;
+    int n ;
+    int size ;
+} HashTable ;
+
+typedef HashTable Commit ;
+
 //exo1
 int hashFile(char *source, char *dest);
 
