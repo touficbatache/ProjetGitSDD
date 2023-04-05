@@ -259,7 +259,7 @@ int main() {
     printf("List3 data is [%s]\n", ltos(l3));*/
 
     // Test exo3
-    //List* listfichiers = listdir("/home/zahra/LU2IN006");
+    List* listfichiers = listdir("/home/zahra/LU2IN006");
     //printf("Liste noms fichiers is [%s]\n", ltos(listfichiers));
     //printf("Existence du fichier test.txt :%d\n", file_exists("projet"));
 
