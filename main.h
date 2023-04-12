@@ -87,3 +87,9 @@ int getChmod(const char *path);
 void setMode(int mode, char *path);
 
 char *saveWorkTree(WorkTree *wt, char *path);
+
+int isWorkTree(char *hash);
+
+void freeWorkTree(WorkTree *wt);
+
+void restoreWorkTree(WorkTree *wt, char *path);
