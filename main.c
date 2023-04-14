@@ -236,19 +236,13 @@ void blobFile ( char* file ) {
 
 //Exo 6
 
-kvp* createKeyVal(char* key, char* val){
-    int len_k = strlen(key);
-    int len_v = str(val);
-
-    kvp* new = (kvp*)malloc(sizeof(kvp));
-    new->key = (char*)malloc(len_k);
-    new->value = (char*)malloc(len_v);
-
-    strcpy(new->key,key);
-    strcpy(new->value,val);
-
-    return new;
+kvp* createKeyVal(char* key, char* val) {
+    kvp* kv = (kvp*)malloc(sizeof(kvp));
+    kv->key = strdup(key);
+    kv->value = strdup(val);
+    return kv;
 }
+
 
 void freeKeyVal(kvp* kv){
     free(kv->key);
@@ -265,12 +259,25 @@ char* kvts(kvp* k){
 }
 
 kvp* stkv(char* str){
-    char* token = strtok(str, ":");
-    clrscr();
-    token = strtok(str, " ");
-    while (token != NULL) {
-    printf("%s\n", token);
-    }
+	//int init_size = strlen(str);
+
+	//char *ptr = strtok(str, ":");
+    //printf(ptr);
+	//while(ptr != NULL)
+	//{
+    //printf("'%s'\n", ptr);
+		//ptr = strtok(NULL, ":");
+	//}
+
+	/* This loop will show that there are zeroes in the str after tokenizing */
+	/*for (int i = 0; i < init_size; i++)
+	{
+		printf("%d ", str[i]); /* Convert the character to integer, in this case
+							   the character's ASCII equivalent
+	}
+	printf("\n");*/
+
+
 }
 
 
@@ -301,6 +308,12 @@ int main() {
     List* listfichiers = listdir("/home/zahra/LU2IN006");
     //printf("Liste noms fichiers is [%s]\n", ltos(listfichiers));
     //printf("Existence du fichier test.txt :%d\n", file_exists("projet"));
+
+    // Test exo6
+    char* str1 = "clé:valeur";
+    //kvp* kvp1 = stkv(str1);
+    //printf(kvp1->key);
+    //printf(kvp1->value);
 
     return 0;
 }
