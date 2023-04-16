@@ -17,6 +17,19 @@ typedef struct {
     int n;
 } WorkTree;
 
+typedef struct key_value_pair {
+    char *key;
+    char *value;
+} kvp;
+
+typedef struct hash_table {
+    kvp **T;
+    int n;
+    int size;
+} HashTable;
+
+typedef HashTable Commit;
+
 //exo1
 int hashFile(char *source, char *dest);
 
@@ -44,7 +57,7 @@ void ltof(List *L, char *path);
 List *ftol(char *path);
 
 //exo3
-List* listdir(char* root_dir);
+List *listdir(char *root_dir);
 
 void freeList(List *L);
 
@@ -93,3 +106,37 @@ int isWorkTree(char *hash);
 void freeWorkTree(WorkTree *wt);
 
 void restoreWorkTree(WorkTree *wt, char *path);
+
+//exo6
+kvp *createKeyVal(char *key, char *val);
+
+void freeKeyVal(kvp *kv);
+
+char *kvts(kvp *k);
+
+kvp *stkv(char *str);
+
+Commit *initCommit();
+
+Commit *createCommit(char *hash);
+
+unsigned long hash(unsigned char *str);
+
+void commitSet(Commit *c, char *key, char *value);
+
+char *commitGet(Commit *c, char *key);
+
+char *cts(Commit *c);
+
+Commit *stc(char *ch);
+
+void ctf(Commit *c, char *file);
+
+Commit *ftc(char *file);
+
+char *blobCommit(Commit *c);
+
+//tests
+char *testWorkTree();
+
+void testCommit(char *wtHash);

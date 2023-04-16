@@ -8,6 +8,7 @@
 
 #define FILE_SIZE 1000
 #define WORKTREE_SIZE 10
+#define COMMIT_SIZE 10
 
 struct stat st = {0};
 
@@ -331,7 +332,7 @@ int inWorkTree(WorkTree *wt, char *name) {
 }
 
 int appendWorkTree(WorkTree *wt, char *name, char *hash, int mode) {
-    if (wt->n == wt->size - 1) {
+    if (wt->n == wt->size) {
         printf("Erreur : le work tree est plein.\n");
         return 1;
     }
@@ -379,7 +380,7 @@ WorkTree *stwt(char *ch) {
 }
 
 int wttf(WorkTree *wt, char *file) {
-    FILE *fp = fopen(file, "w+");
+    FILE *fp = fopen(file, "w");
 
     if (fp == NULL) {
         return -1;
@@ -392,6 +393,10 @@ int wttf(WorkTree *wt, char *file) {
 
 WorkTree *ftwt(char *file) {
     FILE *fp = fopen(file, "r");
+
+    if (fp == NULL) {
+        return NULL;
+    }
 
     char *lines = calloc(FILE_SIZE * WORKTREE_SIZE, sizeof(char));
 
@@ -439,6 +444,7 @@ char *blobWorkTree(WorkTree *wt) {
     cp(path, fname);
 
     free(path);
+    unlink(fname);
     return hash;
 }
 
@@ -554,7 +560,199 @@ void restoreWorkTree(WorkTree *wt, char *path) {
     }
 }
 
+//exo6
+kvp *createKeyVal(char *key, char *val) {
+    kvp *k = malloc(sizeof(kvp));
+
+    if (k == NULL) {
+        perror("createKeyVal: Error allocating memory");
+        return NULL;
+    }
+
+    k->key = strdup(key);
+    k->value = strdup(val);
+    return k;
+}
+
+void freeKeyVal(kvp *kv) {
+    free(kv->key);
+    free(kv->value);
+    free(kv);
+}
+
+char *kvts(kvp *k) {
+    char *buff = calloc(300, sizeof(char));
+    sprintf(buff, "%s : %s", k->key, k->value);
+    return buff;
+}
+
+kvp *stkv(char *str) {
+    char *key = calloc(100, sizeof(char));
+    char *val = calloc(200, sizeof(char));
+
+    sscanf(str, "%s : %[^\0]", key, val);
+
+    kvp *elem = createKeyVal(key, val);
+
+    free(key);
+    free(val);
+
+    return elem;
+}
+
+Commit *initCommit() {
+    Commit *c = malloc(sizeof(Commit));
+
+    if (c == NULL) {
+        perror("initCommit: Error allocating memory");
+        return NULL;
+    }
+
+    c->T = calloc(COMMIT_SIZE, sizeof(kvp *));
+    c->size = COMMIT_SIZE;
+    for (int i = 0; i < c->size; i++) {
+        c->T[i] = NULL;
+    }
+    c->n = 0;
+    return c;
+}
+
+Commit *createCommit(char *hash) {
+    Commit *c = initCommit();
+    commitSet(c, "tree", hash);
+    return c;
+}
+
+unsigned long hash(unsigned char *str) {
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+void commitSet(Commit *c, char *key, char *value) {
+    if (c->n == c->size) {
+        printf("Erreur : le commit est plein.\n");
+        return;
+    }
+
+    int index = hash(key) % c->size;
+    if (c->T[index] == NULL) {
+        while (c->T[index] != NULL) {
+            index = (index + 1) % c->size; //probing linéaire
+        }
+        c->T[index] = createKeyVal(key, value);
+        c->n++;
+    }
+}
+
+char *commitGet(Commit *c, char *key) {
+    int index = hash(key) % c->size;
+    int attempt = 0;
+    while (c->T[index] != NULL && attempt < c->size) {
+        if (strcmp(c->T[index]->key, key) == 0) {
+            return c->T[index]->value;
+        }
+        index = (index + 1) % c->size;
+        attempt = attempt + 1;
+    }
+    return NULL;
+}
+
+char *cts(Commit *c) {
+    char *str = calloc(200 * c->n, sizeof(char));
+
+    for (int i = 0; i < c->size; i++) {
+        if (c->T[i] != NULL) {
+            strcat(str, kvts(c->T[i]));
+            strcat(str, "\n");
+        }
+    }
+
+    return str;
+}
+
+Commit *stc(char *ch) {
+    Commit *c = initCommit();
+
+    char *cs = strtok(ch, "\n");
+    while (cs != NULL) {
+        kvp *elem = stkv(cs);
+        commitSet(c, elem->key, elem->value);
+        cs = strtok(NULL, "\n");
+    }
+
+    return c;
+}
+
+void ctf(Commit *c, char *file) {
+    FILE *fp = fopen(file, "w");
+
+    if (fp == NULL) {
+        return;
+    }
+
+    fputs(cts(c), fp);
+    fclose(fp);
+}
+
+Commit *ftc(char *file) {
+    FILE *fp = fopen(file, "r");
+
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    char *lines = calloc(FILE_SIZE, sizeof(char));
+
+    char line[FILE_SIZE];
+
+    while (fgets(line, FILE_SIZE, fp) != NULL) {
+        if (strlen(lines) > 0) {
+            strcat(lines, "\n");
+        }
+        strcat(lines, line);
+    }
+
+    fclose(fp);
+
+    return stc(lines);
+}
+
+char *blobCommit(Commit *c) {
+    char fname[100] = ".lit/temp_XXXXXX";
+
+    // TODO: `lit init`
+    if (stat(".lit", &st) == -1) {
+        mkdir(".lit", 0700);
+    }
+
+    mkstemp(fname);
+    ctf(c, fname);
+
+    char *hash = sha256file(fname);
+    char *path = hashToFile(hash);
+
+    strcat(path, ".c");
+    cp(path, fname);
+
+    free(path);
+    unlink(fname);
+    return hash;
+}
+
 int main() {
+    char *wtHash = testWorkTree();
+
+    testCommit(wtHash);
+
+    return 0;
+}
+
+char *testWorkTree() {
     WorkTree *wt = initWorkTree();
     printf("Initialized empty WorkTree.\n");
 
@@ -573,16 +771,33 @@ int main() {
         printf("Successfully added \"%s\" to WorkTree.\n", dir1);
     }
 
-    saveWorkTree(wt, ".");
+    printf("\nSaving WorkTree... :\n%s\n", wtts(wt));
+    char *wtHash = saveWorkTree(wt, ".");
 
-    printf("\nCurrent WorkTree :\n%s\n", wtts(wt));
+    // To test restore function, uncomment lines below:
+    // printf("Saved WorkTree. Restoring in 5s...");
+    // sleep(5);
+    //
+    // restoreWorkTree(wt, ".");
+    // printf("\nRestoring WorkTree... :\n%s\n", wtts(wt));
 
-    sleep(5);
+    printf("\n");
 
-    restoreWorkTree(wt, ".");
-    printf("\nCurrent WorkTree :\n%s\n", wtts(wt));
+    return wtHash;
+}
 
-    return 0;
+void testCommit(char *wtHash) {
+    Commit *c = createCommit(wtHash);
+    commitSet(c, "author", "Toufic Batache");
+    commitSet(c, "message", "Ceci est un commit de test");
+    printf("Created commit :\n%s\n", cts(c));
+
+    printf("Blobbing commit...\n");
+    char *cHash = blobCommit(c);
+    char *path = hashToPath(cHash);
+    strcat(path, ".c");
+    Commit *blobbedC = ftc(path);
+    printf("Blobbed commit. Now showing blobbed version :\n%s\n", cts(blobbedC));
 }
 
 //int main() {
