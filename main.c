@@ -744,6 +744,19 @@ char *blobCommit(Commit *c) {
     return hash;
 }
 
+void freeCommit(Commit *c) {
+    for (int i = 0; i < c->size; i++) {
+        kvp *pair = c->T[i];
+        if (pair != NULL) {
+            free(pair->key);
+            free(pair->value);
+            free(pair);
+        }
+    }
+    free(c->T);
+    free(c);
+}
+
 int main() {
     char *wtHash = testWorkTree();
 
@@ -798,6 +811,11 @@ void testCommit(char *wtHash) {
     strcat(path, ".c");
     Commit *blobbedC = ftc(path);
     printf("Blobbed commit. Now showing blobbed version :\n%s\n", cts(blobbedC));
+
+    printf("Trying to get the author... Author : %s\n", commitGet(c, "author"));
+
+    // To free the commit, uncomment line below:
+    // freeCommit(c);
 }
 
 //int main() {
