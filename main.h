@@ -46,7 +46,15 @@ List *ftol(char *path);
 //exo3
 List* listdir(char* root_dir);
 
+void freeList(List *L);
+
 int file_exists(char *file);
+
+void cp(char *to, char *from);
+
+char *hashToPath(char *hash);
+
+void blobFile(char *file);
 
 //exo4
 WorkFile *createWorkFile(char *name);
@@ -68,3 +76,20 @@ WorkTree *stwt(char *str);
 int wttf(WorkTree *wt, char *file);
 
 WorkTree *ftwt(char *file);
+
+//exo5
+char *blobWorkTree(WorkTree *wt);
+
+char *joinPath(char *path1, char *path2);
+
+int getChmod(const char *path);
+
+void setMode(int mode, char *path);
+
+char *saveWorkTree(WorkTree *wt, char *path);
+
+int isWorkTree(char *hash);
+
+void freeWorkTree(WorkTree *wt);
+
+void restoreWorkTree(WorkTree *wt, char *path);
