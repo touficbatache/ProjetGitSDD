@@ -256,10 +256,12 @@ void blobFile(char *file) {
 
 // Exo4
 void litInit() {
+    // Create .lit directory
     if (!file_exists(".lit")) {
         system("mkdir .lit");
     }
 
+    // Create .lit/refs directory and its children
     if (!file_exists(".lit/refs")) {
         char *masterPath = addLitRefsPath("master");
         createFile(masterPath);
@@ -269,6 +271,11 @@ void litInit() {
         createFile(headPath);
         free(headPath);
     }
+
+    // Init current branch to master by setting .lit/current_branch
+    FILE *f = fopen(".lit/current_branch", "w");
+    fputs("master", f);
+    fclose(f);
 }
 
 char *addLitPrefix(char *prefix, char *path) {
@@ -827,6 +834,10 @@ char *getRef(char *ref_name) {
     fgets(result, 256, fp);
     fclose(fp);
 
+    if (strlen(result) > 0 && strstr(result, "\n") != NULL) {
+        result = strtok(result, "\n");
+    }
+
     return result;
 }
 
@@ -913,4 +924,102 @@ void litCommit(char *branchName, char *message) {
 
     free(hashC);
     free(branchPath);
+    free(head_hash);
+    free(last_hash);
+}
+
+//exo 8
+int branchExists(char *branch) {
+    List *refs = listdir(".lit/refs");
+    return searchList(refs, branch) != NULL;
+}
+
+void createBranch(char *branch) {
+    if (branchExists(branch)) {
+        printf("Branch %s already exists!\n", branch);
+        return;
+    }
+    char *hash = getRef("HEAD");
+    createUpdateRef(branch, hash);
+    free(hash);
+}
+
+char *getCurrentBranch() {
+    FILE *f = fopen(".lit/current_branch", "r");
+    char *buff = calloc(100, sizeof(char));
+    fscanf(f, "%s", buff);
+    return buff;
+}
+
+char *hashToPathCommit(char *hash) {
+    char *buff = malloc(sizeof(char) * 100);
+    sprintf(buff, "%s.c", hashToPath(hash));
+    return buff;
+}
+
+void printBranch(char *branch) {
+    char *commit_hash = getRef(branch);
+    char *commit_path = hashToPathCommit(commit_hash);
+    Commit *c = ftc(commit_path);
+    while (c != NULL) {
+        if (commitGet(c, "message") != NULL)
+            printf("%s −> %s \n", commit_hash, commitGet(c, "message"));
+        else
+            printf("%s \n", commit_hash);
+        if (commitGet(c, "predecessor") != NULL) {
+            commit_hash = commitGet(c, "predecessor");
+            commit_path = hashToPathCommit(commit_hash);
+            c = ftc(commit_path);
+        } else {
+            c = NULL;
+        }
+    }
+    free(commit_path);
+    free(commit_hash);
+}
+
+List *branchList(char *branch) {
+    List *L = initList();
+    char *commit_hash = getRef(branch);
+    if (commit_hash == NULL) {
+        printf("Branch %s is empty\n", branch);
+        return NULL;
+    }
+    char *commit_path = hashToPathCommit(commit_hash);
+    Commit *c = ftc(commit_path);
+    while (c != NULL) {
+        insertFirst(L, buildCell(commit_hash));
+        if (commitGet(c, "predecessor") != NULL) {
+            commit_hash = commitGet(c, "predecessor");
+            commit_path = hashToPathCommit(commit_hash);
+            c = ftc(commit_path);
+        } else {
+            c = NULL;
+        }
+    }
+    free(commit_path);
+    free(commit_hash);
+    return L;
+}
+
+List *getAllCommits() {
+    List *l = initList();
+    List *content = listdir(".lit/refs");
+    for (Cell *ptr = *content; ptr != NULL; ptr = ptr->next) {
+        if (ptr->data[0] == '.') {
+            continue;
+        }
+        List *list = branchList(ptr->data);
+        if (list == NULL) {
+            continue;
+        }
+        Cell *cell = *list;
+        while (cell != NULL) {
+            if (searchList(l, cell->data) == NULL) {
+                insertFirst(l, buildCell(cell->data));
+            }
+            cell = cell->next;
+        }
+    }
+    return l;
 }

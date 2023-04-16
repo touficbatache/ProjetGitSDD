@@ -13,8 +13,18 @@ int main() {
     litAdd("test.txt");
     litAdd("test2.txt");
     litAdd("testdir");
+
     litPrintStagingArea();
+
     litCommit("master", "This is a random commit test message");
+
+    printf("Branch contents :\n");
+    printBranch(getCurrentBranch());
+
+    printf("Commits :\n%s\n", ltos(getAllCommits()));
+
+//    createBranch("testbranch");
+//    printf("Current branch is %s\n", getCurrentBranch());
 
     return 0;
 }

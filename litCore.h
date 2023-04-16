@@ -40,7 +40,7 @@ List *initList();
 
 Cell *buildCell(char *ch);
 
-void insertFirst(List *L, Cell *C);
+void insertFirst(List *l, Cell *C);
 
 char *ctos(Cell *c);
 
@@ -166,3 +166,18 @@ void litPrintStagingArea();
 void litClearStagingArea();
 
 void litCommit(char *branchName, char *message);
+
+//exo8
+int branchExists(char *branch);
+
+void createBranch(char *branch);
+
+char *getCurrentBranch();
+
+char *hashToPathCommit(char *hash);
+
+void printBranch(char *branch);
+
+List *branchList(char *branch);
+
+List *getAllCommits();
