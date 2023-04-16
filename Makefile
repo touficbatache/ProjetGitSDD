@@ -1,15 +1,14 @@
-# Makefile pour main.c et main.h
-
+# Makefile pour lit.c et lit.h
 
 CC = gcc
 CFLAGS = -Wall -g
 
 # Source file and header file
-SRC = main.c
-HEADER = main.h
+SRC = lit.c
+HEADER = lit.h
 
 # Output binary
-TARGET = main
+TARGET = lit
 
 # Default target
 all: $(TARGET)

@@ -4,24 +4,13 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include "main.h"
+#include "litCore.h"
 
 #define FILE_SIZE 1000
 #define WORKTREE_SIZE 10
 #define COMMIT_SIZE 10
 
 struct stat st = {0};
-
-char *addLitPrefix(char *path) {
-    char *location = malloc(strlen(path) + sizeof(char) * 11);
-    strcat(location, ".lit/blobs/");
-    if (stat(location, &st) == -1) {
-        mkdir(location, 0700);
-    }
-    strcat(location, path);
-    free(path);
-    return location;
-}
 
 //Exo1
 
@@ -244,7 +233,7 @@ char *hashToPath(char *hash) {
     path[2] = '/';
     strcpy(path + 3, hash + 2);
 
-    return addLitPrefix(path);
+    return addLitBlobPath(path);
 }
 
 void blobFile(char *file) {
@@ -252,7 +241,7 @@ void blobFile(char *file) {
 
     char *ch2 = strdup(hash);
     ch2[2] = '\0';
-    char *location = addLitPrefix(ch2);
+    char *location = addLitBlobPath(ch2);
     if (stat(location, &st) == -1) {
         char buff[100];
         sprintf(buff, "mkdir -p %s", location);
@@ -266,6 +255,49 @@ void blobFile(char *file) {
 }
 
 // Exo4
+void litInit() {
+    if (!file_exists(".lit")) {
+        system("mkdir .lit");
+    }
+
+    if (!file_exists(".lit/refs")) {
+        char *masterPath = addLitRefsPath("master");
+        createFile(masterPath);
+        free(masterPath);
+
+        char *headPath = addLitRefsPath("HEAD");
+        createFile(headPath);
+        free(headPath);
+    }
+}
+
+char *addLitPrefix(char *prefix, char *path) {
+    char *location = malloc(strlen(path) + sizeof(char) * 11);
+    sprintf(location, ".lit/%s/", prefix);
+
+    if (!file_exists(location)) {
+        char buff[256];
+        sprintf(buff, "mkdir %s", location);
+        system(buff);
+    }
+
+    strcat(location, path);
+    return location;
+}
+
+char *addLitBlobPath(char *path) {
+    return addLitPrefix("blob", path);
+}
+
+char *addLitRefsPath(char *path) {
+    return addLitPrefix("refs", path);
+}
+
+void createFile(char *file) {
+    char buff[100];
+    sprintf (buff, "touch %s ", file);
+    system(buff);
+}
 
 WorkFile *createWorkFile(char *name) {
     WorkFile *workFile = malloc(sizeof(WorkFile));
@@ -418,7 +450,7 @@ WorkTree *ftwt(char *file) {
 char *hashToFile(char *hash) {
     char *ch2 = strdup(hash);
     ch2[2] = '\0';
-    char *location = addLitPrefix(ch2);
+    char *location = addLitBlobPath(ch2);
     if (stat(location, &st) == -1) {
         mkdir(location, 0700);
         free(location);
@@ -429,10 +461,7 @@ char *hashToFile(char *hash) {
 char *blobWorkTree(WorkTree *wt) {
     char fname[100] = ".lit/temp_XXXXXX";
 
-    // TODO: `lit init`
-    if (stat(".lit", &st) == -1) {
-        mkdir(".lit", 0700);
-    }
+    litInit();
 
     mkstemp(fname);
     wttf(wt, fname);
@@ -587,15 +616,12 @@ char *kvts(kvp *k) {
 }
 
 kvp *stkv(char *str) {
-    char *key = calloc(100, sizeof(char));
-    char *val = calloc(200, sizeof(char));
+    char key[100];
+    char val[100];
 
     sscanf(str, "%s : %[^\0]", key, val);
 
     kvp *elem = createKeyVal(key, val);
-
-    free(key);
-    free(val);
 
     return elem;
 }
@@ -725,10 +751,7 @@ Commit *ftc(char *file) {
 char *blobCommit(Commit *c) {
     char fname[100] = ".lit/temp_XXXXXX";
 
-    // TODO: `lit init`
-    if (stat(".lit", &st) == -1) {
-        mkdir(".lit", 0700);
-    }
+    litInit();
 
     mkstemp(fname);
     ctf(c, fname);
@@ -757,131 +780,137 @@ void freeCommit(Commit *c) {
     free(c);
 }
 
-int main() {
-    char *wtHash = testWorkTree();
-
-    testCommit(wtHash);
-
-    return 0;
+//exo7
+void createUpdateRef(char *ref_name, char *hash) {
+    char buff[100];
+    sprintf(buff, "echo %s > %s", hash, addLitRefsPath(ref_name));
+    system(buff);
 }
 
-char *testWorkTree() {
-    WorkTree *wt = initWorkTree();
-    printf("Initialized empty WorkTree.\n");
+void deleteRef(char *ref_name) {
+    char *path = addLitRefsPath(ref_name);
 
-    char *file1 = "test.txt";
-    if (appendWorkTree(wt, file1, 0, NULL) == 0) {
-        printf("Successfully added \"%s\" to WorkTree.\n", file1);
+    char buff[256];
+    sprintf(buff, "%s", path);
+
+    if (!file_exists(buff)) {
+        printf("The reference %s does not exist", path);
+        return;
     }
 
-    char *file2 = "test2.txt";
-    if (appendWorkTree(wt, file2, 0, NULL) == 0) {
-        printf("Successfully added \"%s\" to WorkTree.\n", file2);
-    }
+    sprintf(buff, "rm %s", path);
+    system(buff);
 
-    char *dir1 = "testdir";
-    if (appendWorkTree(wt, dir1, 0, NULL) == 0) {
-        printf("Successfully added \"%s\" to WorkTree.\n", dir1);
-    }
-
-    printf("\nSaving WorkTree... :\n%s\n", wtts(wt));
-    char *wtHash = saveWorkTree(wt, ".");
-
-    // To test restore function, uncomment lines below:
-    // printf("Saved WorkTree. Restoring in 5s...");
-    // sleep(5);
-    //
-    // restoreWorkTree(wt, ".");
-    // printf("\nRestoring WorkTree... :\n%s\n", wtts(wt));
-
-    printf("\n");
-
-    return wtHash;
+    free(path);
 }
 
-void testCommit(char *wtHash) {
-    Commit *c = createCommit(wtHash);
-    commitSet(c, "author", "Toufic Batache");
-    commitSet(c, "message", "Ceci est un commit de test");
-    printf("Created commit :\n%s\n", cts(c));
+char *getRef(char *ref_name) {
+    char *path = addLitRefsPath(ref_name);
 
-    printf("Blobbing commit...\n");
-    char *cHash = blobCommit(c);
-    char *path = hashToPath(cHash);
-    strcat(path, ".c");
-    Commit *blobbedC = ftc(path);
-    printf("Blobbed commit. Now showing blobbed version :\n%s\n", cts(blobbedC));
+    char *result = calloc(256, sizeof(char));
 
-    printf("Trying to get the author... Author : %s\n", commitGet(c, "author"));
+    char buff[256];
+    sprintf(buff, "%s", path);
 
-    // To free the commit, uncomment line below:
-    // freeCommit(c);
+    if (!file_exists(buff)) {
+        printf("The reference %s does not exist", path);
+        return NULL;
+    }
+
+    free(path);
+
+    FILE *fp = fopen(buff, "r");
+    if (fp == NULL) {
+        printf("Error opening file.\n");
+        return NULL;
+    }
+    fgets(result, 256, fp);
+    fclose(fp);
+
+    return result;
 }
 
-//int main() {
-//    char *fileName = "test.txt";
-//    char *hash = sha256file(fileName);
-//    printf("Data read back from temporary file is [%s]\n", hash);
-//
-//    List *l = initList();
-//    insertFirst(l, buildCell("world"));
-//    insertFirst(l, buildCell("Hello"));
-//    char *stringList = ltos(l);
-//    printf("List data is [%s]\n", stringList);
-//
-//    printf("Element at index 0 is [%s]\n", ctos(listGet(l, 0)));
-//    printf("Element at index 1 is [%s]\n", ctos(listGet(l, 1)));
-//
-//    List *l2 = stol(stringList);
-//    printf("List2 data is [%s]\n", ltos(l2));
-//
-//    char *fileNameSaveList = "testingC.txt";
-//    ltof(l, fileNameSaveList);
-//    List *l3 = ftol(fileNameSaveList);
-//    printf("List3 data is [%s]\n", ltos(l3));
-//
-////    List *l04 = listdir("/users/Etu5/28725545/LU2IN006");
-////    printf("List04 data is [%s]\n", ltos(l04));
-////
-////    printf("Attendu : 0\tObtenu : %d\n", searchList("/users/Etu5/28725545/LU2IN006", "bday.py"));
-////    printf("Attendu : 1\tObtenu : %d\n", searchList("/users/Etu5/28725545/Document", "bday.py"));
-//
-//    WorkFile *wf = createWorkFile("Test work file");
-//    char *wfs = wfts(wf);
-//    printf("\nCreated WorkFile : %s\n\n", wfs);
-//    WorkFile *wf2 = stwf(wfs);
-//    printf("Cloned WorkFile : %s\n\n", wfts(wf2));
-//
-//    WorkTree *wt = initWorkTree();
-//    printf("Initialized empty WorkTree.\n");
-//    if (appendWorkTree(wt, fileName, hash, 777) == 0) {
-//        printf("Successfully added \"%s\" to WorkTree.\n", fileName);
-//    }
-//    if (appendWorkTree(wt, fileNameSaveList, sha256file(fileNameSaveList), 777) == 0) {
-//        printf("Successfully added \"%s\" to WorkTree.\n", fileNameSaveList);
-//    }
-//
-//    char *wts = wtts(wt);
-//    printf("\nCurrent WorkTree :\n%s\n", wts);
-//    WorkTree *wt2 = stwt(wts);
-//    printf("Cloned WorkTree :\n%s\n\n", wtts(wt2));
-//
-//    char *fileNameSaveWorkTree = "work_tree_save.txt";
-//    printf("Saving it to file %s...\n", fileNameSaveList);
-//    wttf(wt2, fileNameSaveWorkTree);
-//    printf("Done!\n");
-//
-//    printf("Reading it back to test...\n");
-//    WorkTree *wtReadFromFile = ftwt(fileNameSaveWorkTree);
-//    printf("\nRead WorkTree :\n%s\n", wtts(wtReadFromFile));
-//
-////    blobWorkTree(wt);
-//
-//    saveWorkTree(wt, ".");
-//
-//    printf("\nWorkTree after saving :\n%s\n", wtts(wt));
-//
-////    TODO: free allocated memory
-////    free(hash);
-//    return 0;
-//}
+void litListRefs() {
+    printf("REFS : \n");
+    if (file_exists(".lit/refs")) {
+        List *L = listdir(".lit/refs");
+        for (Cell *ptr = *L; ptr != NULL; ptr = ptr->next) {
+            if (ptr->data[0] == '.')
+                continue;
+            char *content = getRef(ptr->data);
+            printf("− %s \t %s \n", ptr->data, content);
+        }
+    }
+}
+
+void litAdd(char *file_or_folder) {
+    WorkTree *wt;
+
+    // Initialize staging area, either from blank or from "add" file
+    if (!file_exists(".lit/add")) {
+        createFile(".lit/add");
+        wt = initWorkTree();
+    } else {
+        wt = ftwt(".lit/add");
+    }
+
+    // Add file or folder to staging area
+    if (file_exists(file_or_folder)) {
+        appendWorkTree(wt, file_or_folder, 0, NULL);
+        wttf(wt, ".lit/add");
+    } else {
+        printf("File or folder %s does not exist\n", file_or_folder);
+    }
+}
+
+void litPrintStagingArea() {
+    printf("Zone de préparation : \n");
+    if (file_exists(".lit/add")) {
+        WorkTree *wt = ftwt(".lit/add");
+        printf("%s \n", wtts(wt));
+    }
+}
+
+void litClearStagingArea() {
+    system("rm .lit/add");
+}
+
+void litCommit(char *branchName, char *message) {
+    litInit();
+
+    char *branchPath = addLitRefsPath(branchName);
+
+    char buff[256];
+    sprintf (buff, "%s", branchPath);
+
+    if (!file_exists(buff)) {
+        printf("La branche n'existe pas\n");
+        return;
+    }
+
+    char *last_hash = getRef(branchName);
+    char *head_hash = getRef("HEAD");
+    if (strcmp(last_hash, head_hash) != 0) {
+        printf("HEAD doit pointer sur le commit de la branche\n");
+        return;
+    }
+
+    WorkTree *wt = ftwt(".lit/add");
+    char *hashWt = saveWorkTree(wt, ".");
+
+    Commit *c = createCommit(hashWt);
+    if (strlen(last_hash) != 0) {
+        commitSet(c, "predecessor", last_hash);
+    }
+    if (message != NULL) {
+        commitSet(c, "message", message);
+    }
+
+    char *hashC = blobCommit(c);
+    createUpdateRef(branchName, hashC);
+    createUpdateRef("HEAD", hashC);
+    system("rm .lit/add");
+
+    free(hashC);
+    free(branchPath);
+}

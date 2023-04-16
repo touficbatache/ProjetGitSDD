@@ -70,6 +70,16 @@ char *hashToPath(char *hash);
 void blobFile(char *file);
 
 //exo4
+void litInit();
+
+char *addLitPrefix(char *prefix, char *path);
+
+char *addLitBlobPath(char *path);
+
+char *addLitRefsPath(char *path);
+
+void createFile(char *file);
+
 WorkFile *createWorkFile(char *name);
 
 char *wfts(WorkFile *wf);
@@ -136,7 +146,23 @@ Commit *ftc(char *file);
 
 char *blobCommit(Commit *c);
 
-//tests
-char *testWorkTree();
+void freeCommit(Commit *c);
 
-void testCommit(char *wtHash);
+//exo7
+void litInit();
+
+void createUpdateRef(char *ref_name, char *hash);
+
+void deleteRef(char *ref_name);
+
+char *getRef(char *ref_name);
+
+void litListRefs();
+
+void litAdd(char *file_or_folder);
+
+void litPrintStagingArea();
+
+void litClearStagingArea();
+
+void litCommit(char *branchName, char *message);
