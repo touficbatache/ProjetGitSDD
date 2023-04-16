@@ -5,26 +5,13 @@
 #include "litTest.h"
 
 int main() {
+//    firstExercisesTest();
+//
 //    char *wtHash = testWorkTree();
 //
 //    testCommit(wtHash);
 
-    litInit();
-    litAdd("test.txt");
-    litAdd("test2.txt");
-    litAdd("testdir");
-
-    litPrintStagingArea();
-
-    litCommit("master", "This is a random commit test message");
-
-    printf("Branch contents :\n");
-    printBranch(getCurrentBranch());
-
-    printf("Commits :\n%s\n", ltos(getAllCommits()));
-
-//    createBranch("testbranch");
-//    printf("Current branch is %s\n", getCurrentBranch());
+    testLit();
 
     return 0;
 }
@@ -82,70 +69,107 @@ void testCommit(char *wtHash) {
     // freeCommit(c);
 }
 
-//int main() {
-//    char *fileName = "test.txt";
-//    char *hash = sha256file(fileName);
-//    printf("Data read back from temporary file is [%s]\n", hash);
+void testLit() {
+    char *testBranch = "testbranch";
+
+    printf("Initializing lit and adding test file and directory...\n");
+    litInit();
+    litAdd("test.txt");
+    litAdd("testdir");
+
+    printf("\nCurrent branch is %s\n", getCurrentBranch());
+    litPrintStagingArea();
+
+    printf("\nCommitting...\n");
+    litCommit(getCurrentBranch(), "This is 1st a random commit test message");
+
+    printf("\n'%s' contents :\n", getCurrentBranch());
+    printBranch(getCurrentBranch());
+
+    printf("\nAll commits :\n%s\n", ltos(getAllCommits()));
+
+    printf("\nCreating '%s' and checking into it...\n", testBranch);
+    createBranch(testBranch);
+    litCheckoutBranch(testBranch);
+
+    printf("\nAdding new test file...\n");
+    litAdd("test2.txt");
+
+    printf("\nCurrent branch is %s\n", getCurrentBranch());
+    litPrintStagingArea();
+
+    printf("\nCommitting...\n");
+    litCommit(getCurrentBranch(), "This is a 2nd random commit test message");
+
+    printf("\n'%s' contents :\n", getCurrentBranch());
+    printBranch(getCurrentBranch());
+
+    printf("\nAll commits :\n%s\n", ltos(getAllCommits()));
+}
+
+void firstExercisesTest() {
+    char *fileName = "test.txt";
+    char *hash = sha256file(fileName);
+    printf("Data read back from temporary file is [%s]\n", hash);
+
+    List *l = initList();
+    insertFirst(l, buildCell("world"));
+    insertFirst(l, buildCell("Hello"));
+    char *stringList = ltos(l);
+    printf("List data is [%s]\n", stringList);
+
+    printf("Element at index 0 is [%s]\n", ctos(listGet(l, 0)));
+    printf("Element at index 1 is [%s]\n", ctos(listGet(l, 1)));
+
+    List *l2 = stol(stringList);
+    printf("List2 data is [%s]\n", ltos(l2));
+
+    char *fileNameSaveList = "testingC.txt";
+    ltof(l, fileNameSaveList);
+    List *l3 = ftol(fileNameSaveList);
+    printf("List3 data is [%s]\n", ltos(l3));
+
+//    List *l04 = listdir("/users/Etu5/28725545/LU2IN006");
+//    printf("List04 data is [%s]\n", ltos(l04));
 //
-//    List *l = initList();
-//    insertFirst(l, buildCell("world"));
-//    insertFirst(l, buildCell("Hello"));
-//    char *stringList = ltos(l);
-//    printf("List data is [%s]\n", stringList);
-//
-//    printf("Element at index 0 is [%s]\n", ctos(listGet(l, 0)));
-//    printf("Element at index 1 is [%s]\n", ctos(listGet(l, 1)));
-//
-//    List *l2 = stol(stringList);
-//    printf("List2 data is [%s]\n", ltos(l2));
-//
-//    char *fileNameSaveList = "testingC.txt";
-//    ltof(l, fileNameSaveList);
-//    List *l3 = ftol(fileNameSaveList);
-//    printf("List3 data is [%s]\n", ltos(l3));
-//
-////    List *l04 = listdir("/users/Etu5/28725545/LU2IN006");
-////    printf("List04 data is [%s]\n", ltos(l04));
-////
-////    printf("Attendu : 0\tObtenu : %d\n", searchList("/users/Etu5/28725545/LU2IN006", "bday.py"));
-////    printf("Attendu : 1\tObtenu : %d\n", searchList("/users/Etu5/28725545/Document", "bday.py"));
-//
-//    WorkFile *wf = createWorkFile("Test work file");
-//    char *wfs = wfts(wf);
-//    printf("\nCreated WorkFile : %s\n\n", wfs);
-//    WorkFile *wf2 = stwf(wfs);
-//    printf("Cloned WorkFile : %s\n\n", wfts(wf2));
-//
-//    WorkTree *wt = initWorkTree();
-//    printf("Initialized empty WorkTree.\n");
-//    if (appendWorkTree(wt, fileName, hash, 777) == 0) {
-//        printf("Successfully added \"%s\" to WorkTree.\n", fileName);
-//    }
-//    if (appendWorkTree(wt, fileNameSaveList, sha256file(fileNameSaveList), 777) == 0) {
-//        printf("Successfully added \"%s\" to WorkTree.\n", fileNameSaveList);
-//    }
-//
-//    char *wts = wtts(wt);
-//    printf("\nCurrent WorkTree :\n%s\n", wts);
-//    WorkTree *wt2 = stwt(wts);
-//    printf("Cloned WorkTree :\n%s\n\n", wtts(wt2));
-//
-//    char *fileNameSaveWorkTree = "work_tree_save.txt";
-//    printf("Saving it to file %s...\n", fileNameSaveList);
-//    wttf(wt2, fileNameSaveWorkTree);
-//    printf("Done!\n");
-//
-//    printf("Reading it back to test...\n");
-//    WorkTree *wtReadFromFile = ftwt(fileNameSaveWorkTree);
-//    printf("\nRead WorkTree :\n%s\n", wtts(wtReadFromFile));
-//
-////    blobWorkTree(wt);
-//
-//    saveWorkTree(wt, ".");
-//
-//    printf("\nWorkTree after saving :\n%s\n", wtts(wt));
-//
-////    TODO: free allocated memory
-////    free(hash);
-//    return 0;
-//}
+//    printf("Attendu : 0\tObtenu : %d\n", searchList("/users/Etu5/28725545/LU2IN006", "bday.py"));
+//    printf("Attendu : 1\tObtenu : %d\n", searchList("/users/Etu5/28725545/Document", "bday.py"));
+
+    WorkFile *wf = createWorkFile("Test work file");
+    char *wfs = wfts(wf);
+    printf("\nCreated WorkFile : %s\n\n", wfs);
+    WorkFile *wf2 = stwf(wfs);
+    printf("Cloned WorkFile : %s\n\n", wfts(wf2));
+
+    WorkTree *wt = initWorkTree();
+    printf("Initialized empty WorkTree.\n");
+    if (appendWorkTree(wt, fileName, hash, 777) == 0) {
+        printf("Successfully added \"%s\" to WorkTree.\n", fileName);
+    }
+    if (appendWorkTree(wt, fileNameSaveList, sha256file(fileNameSaveList), 777) == 0) {
+        printf("Successfully added \"%s\" to WorkTree.\n", fileNameSaveList);
+    }
+
+    char *wts = wtts(wt);
+    printf("\nCurrent WorkTree :\n%s\n", wts);
+    WorkTree *wt2 = stwt(wts);
+    printf("Cloned WorkTree :\n%s\n\n", wtts(wt2));
+
+    char *fileNameSaveWorkTree = "work_tree_save.txt";
+    printf("Saving it to file %s...\n", fileNameSaveList);
+    wttf(wt2, fileNameSaveWorkTree);
+    printf("Done!\n");
+
+    printf("Reading it back to test...\n");
+    WorkTree *wtReadFromFile = ftwt(fileNameSaveWorkTree);
+    printf("\nRead WorkTree :\n%s\n", wtts(wtReadFromFile));
+
+//    blobWorkTree(wt);
+
+    saveWorkTree(wt, ".");
+
+    printf("\nWorkTree after saving :\n%s\n", wtts(wt));
+
+//    TODO: free allocated memory
+//    free(hash);
+}

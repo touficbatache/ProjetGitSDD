@@ -112,11 +112,12 @@ Cell *listGet(List *l, int i) {
 }
 
 Cell *searchList(List *l, char *str) {
-    while (*l) {
-        if (strcmp(ctos(*l), str) == 0) {
-            return *l;
+    List tmp = *l;
+    while (tmp) {
+        if (strcmp(ctos(tmp), str) == 0) {
+            return tmp;
         }
-        *l = (*l)->next;
+        tmp = (tmp)->next;
     }
     return NULL;
 }
@@ -273,9 +274,11 @@ void litInit() {
     }
 
     // Init current branch to master by setting .lit/current_branch
-    FILE *f = fopen(".lit/current_branch", "w");
-    fputs("master", f);
-    fclose(f);
+    if (!file_exists(".lit/current_branch")) {
+        FILE *f = fopen(".lit/current_branch", "w");
+        fputs("master", f);
+        fclose(f);
+    }
 }
 
 char *addLitPrefix(char *prefix, char *path) {
@@ -875,7 +878,7 @@ void litAdd(char *file_or_folder) {
 }
 
 void litPrintStagingArea() {
-    printf("Zone de préparation : \n");
+    printf("Staging area : \n");
     if (file_exists(".lit/add")) {
         WorkTree *wt = ftwt(".lit/add");
         printf("%s \n", wtts(wt));
@@ -958,6 +961,11 @@ char *hashToPathCommit(char *hash) {
 }
 
 void printBranch(char *branch) {
+    if (!branchExists(branch)) {
+        printf("Branch %s does not exist!\n", branch);
+        return;
+    }
+
     char *commit_hash = getRef(branch);
     char *commit_path = hashToPathCommit(commit_hash);
     Commit *c = ftc(commit_path);
@@ -1006,13 +1014,9 @@ List *getAllCommits() {
     List *l = initList();
     List *content = listdir(".lit/refs");
     for (Cell *ptr = *content; ptr != NULL; ptr = ptr->next) {
-        if (ptr->data[0] == '.') {
-            continue;
-        }
+        if (ptr->data[0] == '.') { continue; }
         List *list = branchList(ptr->data);
-        if (list == NULL) {
-            continue;
-        }
+        if (list == NULL) { continue; }
         Cell *cell = *list;
         while (cell != NULL) {
             if (searchList(l, cell->data) == NULL) {
@@ -1022,4 +1026,68 @@ List *getAllCommits() {
         }
     }
     return l;
+}
+
+//exo9
+void restoreCommit(char *commitHash) {
+    char *commitPath = hashToPathCommit(commitHash);
+    Commit *c = ftc(commitPath);
+
+    char *treeHash = commitGet(c, "tree");
+    char *treePath = hashToPath(treeHash);
+    strcat(treePath, ".t");
+
+    WorkTree *wt = ftwt(treePath);
+    restoreWorkTree(wt, ".");
+
+    free(treePath);
+    free(treeHash);
+    free(commitPath);
+}
+
+void litCheckoutBranch(char *branchName) {
+    if (!branchExists(branchName)) {
+        printf("Branch %s does not exist!\n", branchName);
+        return;
+    }
+
+    FILE *f = fopen(".lit/current_branch", "w");
+    fprintf(f, "%s", branchName);
+    fclose(f);
+
+    char *commitHash = getRef(branchName);
+    createUpdateRef("HEAD", commitHash);
+    restoreCommit(commitHash);
+}
+
+List *filterList(List *l, char *pattern) {
+    List *filtered = initList();
+    for (Cell *ptr = *l; ptr != NULL; ptr = ptr->next) {
+        char *c = strdup(ptr->data);
+        c[strlen(pattern)] = '\0';
+        if (strcmp(c, pattern) == 0) {
+            insertFirst(filtered, buildCell(ptr->data));
+        }
+        free(c);
+    }
+    return filtered;
+}
+
+void litCheckoutCommit(char *pattern) {
+    List *commits = getAllCommits();
+    List *filteredList = filterList(commits, pattern);
+    if ((*filteredList)->next == NULL) {
+        char *commit_hash = (listGet(filteredList, 0))->data;
+        createUpdateRef("HEAD", commit_hash);
+        restoreCommit(commit_hash);
+    } else {
+        if ((*filteredList) == NULL) {
+            printf("No pattern matching.\n");
+        } else {
+            printf("Multiple matchings found : \n");
+            for (Cell *ptr = *filteredList; ptr != NULL; ptr = ptr->next) {
+                printf("−> %s \n", ptr->data);
+            }
+        }
+    }
 }

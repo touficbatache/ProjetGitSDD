@@ -10,7 +10,15 @@ int main(int argc, char **argv) {
 
     if (strcmp(argv[1], "init") == 0) {
         litInit();
-    } else if (strcmp(argv[1], "list-refs") == 0) {
+        return 0;
+    }
+
+    if (!file_exists(".lit")) {
+        printf("lit is not initialized. Initialize it with:\n%s init\n", argv[0]);
+        return 1;
+    }
+
+    if (strcmp(argv[1], "list-refs") == 0) {
         litListRefs();
     } else if (strcmp(argv[1], "create-ref") == 0) {
         if (argc != 4) {
@@ -49,6 +57,30 @@ int main(int argc, char **argv) {
             }
         }
         litCommit(argv[2], message);
+    } else if (strcmp(argv[1], "branch") == 0) {
+        if (argc != 3) {
+            printf("Usage: %s branch <name>\n", argv[0]);
+            return 1;
+        }
+        createBranch(argv[2]);
+    } else if (strcmp(argv[1], "branch-print") == 0) {
+        if (argc != 3) {
+            printf("Usage: %s branch-print <name>\n", argv[0]);
+            return 1;
+        }
+        printBranch(argv[2]);
+    } else if (strcmp(argv[1], "checkout−branch") == 0) {
+        if (argc != 3) {
+            printf("Usage: %s checkout-branch <name>\n", argv[0]);
+            return 1;
+        }
+        litCheckoutBranch(argv[2]);
+    } else if (strcmp(argv[1], "checkout-commit") == 0) {
+        if (argc != 3) {
+            printf("Usage: %s checkout-commit <name>\n", argv[0]);
+            return 1;
+        }
+        litCheckoutCommit(argv[2]);
     } else {
         printf("Unrecognized command: %s\n", argv[1]);
         return 1;
