@@ -283,7 +283,7 @@ WorkFile *createWorkFile(char *name) {
 
 char *wfts(WorkFile *wf) {
     char *s = calloc(100, sizeof(char));
-    sprintf(s, "%s\t%s\t%d", wf->name, wf->hash, wf->mode);
+    sprintf(s, "%s\t%s\t%o", wf->name, wf->hash, wf->mode);
     return s;
 }
 
@@ -292,7 +292,7 @@ WorkFile *stwf(char *ch) {
     char *hash = calloc(100, sizeof(char));
     int mode;
 
-    sscanf(ch, "%[^\t]\t%[^\t]\t%d", name, hash, &mode);
+    sscanf(ch, "%[^\t]\t%[^\t]\t%o", name, hash, &mode);
 
     WorkFile *wf = createWorkFile(name);
     free(name);
@@ -355,7 +355,7 @@ char *wtts(WorkTree *wt) {
 
     int i = 0;
     while (i < wt->n) {
-        strcat(s, wfts(&((wt->tab)[i])));
+        strcat(s, wfts(&(wt->tab[i])));
         if (i < wt->n - 1) {
             strcat(s, "\n");
         }
@@ -466,7 +466,7 @@ int getChmod(const char *path) {
 
 void setMode(int mode, char *path) {
     char buff[100];
-    sprintf(buff, "chmod %d %s", mode, path);
+    sprintf(buff, "chmod %o %s", mode, path);
     system(buff);
 }
 
@@ -479,18 +479,18 @@ int isFile(const char *path) {
 
 char *saveWorkTree(WorkTree *wt, char *path) {
     for (int i = 0; i < wt->n; i++) {
-        char *fullpath = joinPath(path, wt->tab[i].name);
-        if (isFile(fullpath) == 1) {
+        char *workingDirectoryPath = joinPath(path, wt->tab[i].name);
+        if (isFile(workingDirectoryPath) == 1) {
             // If WF is a file, create a record snapshot of this file
-            blobFile(fullpath);
+            blobFile(workingDirectoryPath);
 
             // Save the hash and mode of the file in WF
-            wt->tab[i].hash = sha256file(fullpath);
-            wt->tab[i].mode = getChmod(fullpath);
+            wt->tab[i].hash = sha256file(workingDirectoryPath);
+            wt->tab[i].mode = getChmod(workingDirectoryPath);
         } else {
             // If WF is a directory, create a new WorkTree representing its contents
             WorkTree *newWt = initWorkTree();
-            List *l = listdir(fullpath);
+            List *l = listdir(workingDirectoryPath);
 
             for (Cell *ptr = *l; ptr != NULL; ptr = ptr->next) {
                 if (ptr->data[0] == '.') { continue; }
@@ -499,10 +499,10 @@ char *saveWorkTree(WorkTree *wt, char *path) {
             }
 
             // Save the hash and mode of the sub-WorkTree in WF
-            wt->tab[i].hash = saveWorkTree(newWt, fullpath);
-            wt->tab[i].mode = getChmod(fullpath);
+            wt->tab[i].hash = saveWorkTree(newWt, workingDirectoryPath);
+            wt->tab[i].mode = getChmod(workingDirectoryPath);
         }
-        free(fullpath);
+        free(workingDirectoryPath);
     }
 
     // Create a snapshot of the WorkTree and return its hash
@@ -521,7 +521,7 @@ int isWorkTree(char *hash) {
 
 void freeWorkTree(WorkTree *wt) {
     for (int i = 0; i < wt->n; i++) {
-        WorkFile *wf = &wt->tab[i];
+        WorkFile *wf = &(wt->tab[i]);
         if (isWorkTree(wf->hash)) {
             WorkTree *nwt = ftwt(hashToPath(wf->hash));
             freeWorkTree(nwt);
@@ -530,27 +530,27 @@ void freeWorkTree(WorkTree *wt) {
         free(wf->name);
         free(wf);
     }
-    free(wt->tab);
     free(wt);
 }
 
 void restoreWorkTree(WorkTree *wt, char *path) {
     for (int i = 0; i < wt->n; i++) {
-        char *absPath = joinPath(path, wt->tab[i].name);
-        char *copyPath = hashToPath(wt->tab[i].hash);
+        char *workingDirectoryPath = joinPath(path, wt->tab[i].name);
+        char *litPath = hashToPath(wt->tab[i].hash);
         char *hash = wt->tab[i].hash;
+        int chmod = wt->tab[i].mode;
         if (isWorkTree(hash) == 0) { //si c’est un fichier
-            cp(absPath, copyPath);
-            setMode(getChmod(copyPath), absPath);
+            cp(workingDirectoryPath, litPath);
+            setMode(chmod, workingDirectoryPath);
         } else if (isWorkTree(hash) == 1) { //si c’est un repertoire
-            strcat(copyPath, ".t");
-            WorkTree *nwt = ftwt(copyPath);
-            restoreWorkTree(nwt, absPath);
-            setMode(getChmod(copyPath), absPath);
-            freeWorkTree(nwt);
+            mkdir(workingDirectoryPath, chmod);
+            strcat(litPath, ".t");
+            WorkTree *newWt = ftwt(litPath);
+            restoreWorkTree(newWt, workingDirectoryPath);
+            freeWorkTree(newWt);
         }
-        free(absPath);
-        free(copyPath);
+        free(workingDirectoryPath);
+        free(litPath);
     }
 }
 
@@ -573,11 +573,14 @@ int main() {
         printf("Successfully added \"%s\" to WorkTree.\n", dir1);
     }
 
+    saveWorkTree(wt, ".");
+
     printf("\nCurrent WorkTree :\n%s\n", wtts(wt));
 
-    printf("\nSaving WorkTree...\n");
-    saveWorkTree(wt, ".");
-    printf("\nSaved WorkTree :\n%s\n", wtts(wt));
+    sleep(5);
+
+    restoreWorkTree(wt, ".");
+    printf("\nCurrent WorkTree :\n%s\n", wtts(wt));
 
     return 0;
 }
