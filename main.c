@@ -144,7 +144,7 @@ List *ftol(char *path) {
 
 
 //Exo 3
-List* listdir ( char* root_dir ) {
+List* listdir (char* root_dir) {
     DIR * dp ;
     struct dirent * ep ;
     List * L = initList () ;
@@ -207,14 +207,14 @@ void cp(char* to, char* from) {
     fclose(dest);
 }
 
-char* hashToPath ( char * hash ) {
+char* hashToPath (char * hash) {
     /*
     On rappelle que le chemin s’obtient en inserant
     un ”/” entre le deuxi`eme et le troisieme caract`eres du hash.
     */
     char* dir = malloc((strlen(hash) + 1 )*sizeof(char)) ;
-    dir[0] = hash [0];
-    dir[1] = hash [1];
+    dir[0] = hash[0];
+    dir[1] = hash[1];
     dir[2] = '/' ;
     int i ;
     for (i=3; i<=strlen(hash); i++) {
@@ -224,14 +224,14 @@ char* hashToPath ( char * hash ) {
     return dir;
 }
 
-void blobFile ( char* file ) {
+void blobFile (char* file) {
     char* hash = sha256file(file) ;
     char* ch2 = strdup(hash) ;
     ch2 [2] = '\0' ;
     if (!file_exists(ch2)) {
         char buff[100];
-        sprintf (buff , "mkdir %s" ,ch2 ) ;
-        system (buff) ;
+        sprintf(buff , "mkdir %s" ,ch2 ) ;
+        system(buff) ;
     }
     char* ch = hashToPath(hash) ;
     cp(ch, file) ;
@@ -315,6 +315,10 @@ int main() {
     cp(newfile,testtxt);
 
     char* pathfromhash = hashToPath(sha256file(testtxt));
+    printf("Chemin obtenu pour le fichier [%s] donné avec son hash: [%s]\n", testtxt, pathfromhash);
+
+    blobFile(testtxt);
+
     // Test exo6
     //char* str1 = "clé:valeur";
     //kvp* kvp1 = stkv(str1);
