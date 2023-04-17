@@ -52,6 +52,8 @@ List *initList() {
         return NULL;
     }
 
+    *l = NULL;
+
     return l;
 }
 
