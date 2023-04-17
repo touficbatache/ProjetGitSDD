@@ -145,7 +145,7 @@ void testLit() {
     printf("\n'%s' contents :\n", getCurrentBranch());
     printBranch(getCurrentBranch());
 
-    printf("\nAll commits :\n%s\n", ltos(getAllCommits()));
+    printf("\nAll commits :\n%s\n", ltosNewLine(getAllCommits()));
 
     printf("\nCreating '%s' and checking into it...\n", testBranch);
     createBranch(testBranch);
@@ -163,7 +163,7 @@ void testLit() {
     printf("\n'%s' contents :\n", getCurrentBranch());
     printBranch(getCurrentBranch());
 
-    printf("\nAll commits :\n%s\n", ltos(getAllCommits()));
+    printf("\nAll commits :\n%s\n", ltosNewLine(getAllCommits()));
 }
 
 void testLitMerge() {
@@ -223,7 +223,7 @@ void testLitMerge() {
         //mergeConflictOption3(conflicts, mergeFromBranch, mergeCommitMessage);
     }
 
-    printf("\nAll commits :\n%s\n", ltos(getAllCommits()));
+    printf("\nAll commits :\n%s\n", ltosNewLine(getAllCommits()));
 }
 
 void mergeConflictOption1(List *conflicts, char *remoteBranch, char *message) {
@@ -249,20 +249,20 @@ void mergeConflictOption3(List *conflicts, char *remoteBranch, char *message) {
     List *remoteChanges = initList();
 
     // file 1
-    printf("\nFile: %s\n", (*conflicts)->data);
+    printf("\nFile: %s\n", ctos(*conflicts));
     printf("1. Accept local changes\t\t2. Accept remote changes");
 
     printf("\nSelected option 2.\n");
 
-    insertFirst(remoteChanges, buildCell((*conflicts)->data));
+    insertFirst(remoteChanges, buildCell(ctos(*conflicts)));
 
     // file 2
-    printf("\nFile: %s\n", (*conflicts)->next->data);
+    printf("\nFile: %s\n", ctos((*conflicts)->next));
     printf("1. Accept local changes\t\t2. Accept remote changes");
 
     printf("\nSelected option 1.\n");
 
-    insertFirst(localChanges, buildCell((*conflicts)->next->data));
+    insertFirst(localChanges, buildCell(ctos((*conflicts)->next)));
 
     acceptChanges(1, localChanges, remoteBranch);
     acceptChanges(0, remoteChanges, remoteBranch);

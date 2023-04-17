@@ -35,8 +35,8 @@ int showMergeConflictsMessage(List *conflicts, char *remoteBranch, char *message
 
         List *localChanges = initList();
         List *remoteChanges = initList();
-        for (List *tmp = conflicts; *tmp != NULL; *tmp = (*tmp)->next) {
-            printf("\nFile: %s\n", (*tmp)->data);
+        for (List tmp = *conflicts; tmp != NULL; tmp = tmp->next) {
+            printf("\nFile: %s\n", ctos(tmp));
             printf("1. Accept local changes\t\t2. Accept remote changes");
 
             int fileSelectedOption;
@@ -44,9 +44,9 @@ int showMergeConflictsMessage(List *conflicts, char *remoteBranch, char *message
             scanf("%d", &fileSelectedOption);
 
             if (fileSelectedOption == 1) {
-                insertFirst(localChanges, buildCell((*tmp)->data));
+                insertFirst(localChanges, buildCell(ctos(tmp)));
             } else if (fileSelectedOption == 2) {
-                insertFirst(remoteChanges, buildCell((*tmp)->data));
+                insertFirst(remoteChanges, buildCell(ctos(tmp)));
             }
         }
 

@@ -78,43 +78,23 @@ char *ctos(Cell *c) {
 }
 
 char *ltos(List *l) {
-    unsigned long strLen = 0;
-    List tmp = *l;
-    while (tmp) {
-        strLen += strlen(ctos(tmp)) + 1;
-        tmp = tmp->next;
-    }
-    strLen -= 1;
-
-    char *str = calloc(strLen, sizeof(char));
-    tmp = *l;
-    while (tmp) {
+    char *str = calloc(500, sizeof(char));
+    for (List tmp = *l; tmp != NULL; tmp = tmp->next) {
         if (strlen(str) > 0) {
-            strcat(str, "\n");
+            strcat(str, "|");
         }
         strcat(str, ctos(tmp));
-        tmp = tmp->next;
     }
     return str;
 }
 
 char *ltosNewLine(List *l) {
-    unsigned long strLen = 0;
-    List tmp = *l;
-    while (tmp) {
-        strLen += strlen(ctos(tmp)) + 1;
-        tmp = tmp->next;
-    }
-    strLen -= 1;
-
-    char *str = calloc(strLen, sizeof(char));
-    tmp = *l;
-    while (tmp) {
+    char *str = calloc(500, sizeof(char));
+    for (List *tmp = l; *tmp != NULL; *tmp = (*tmp)->next) {
         if (strlen(str) > 0) {
-            strcat(str, "|");
+            strcat(str, "\n");
         }
-        strcat(str, ctos(tmp));
-        tmp = tmp->next;
+        strcat(str, ctos(*tmp));
     }
     return str;
 }
@@ -577,9 +557,9 @@ char *saveWorkTree(WorkTree *wt, char *path) {
             List *l = listdir(workingDirectoryPath);
 
             for (Cell *ptr = *l; ptr != NULL; ptr = ptr->next) {
-                if (ptr->data[0] == '.') { continue; }
+                if (ctos(ptr)[0] == '.') { continue; }
 
-                appendWorkTree(newWt, ptr->data, NULL, 0);
+                appendWorkTree(newWt, ctos(ptr), NULL, 0);
             }
 
             // Save the hash and mode of the sub-WorkTree in WF
@@ -895,10 +875,10 @@ void litListRefs() {
     if (file_exists(".lit/refs")) {
         List *L = listdir(".lit/refs");
         for (Cell *ptr = *L; ptr != NULL; ptr = ptr->next) {
-            if (ptr->data[0] == '.')
+            if (ctos(ptr)[0] == '.')
                 continue;
-            char *content = getRef(ptr->data);
-            printf("− %s \t %s \n", ptr->data, content);
+            char *content = getRef(ctos(ptr));
+            printf("− %s \t %s \n", ctos(ptr), content);
         }
     }
 }
@@ -1058,13 +1038,13 @@ List *getAllCommits() {
     List *l = initList();
     List *content = listdir(".lit/refs");
     for (Cell *ptr = *content; ptr != NULL; ptr = ptr->next) {
-        if (ptr->data[0] == '.') { continue; }
-        List *list = branchList(ptr->data);
+        if (ctos(ptr)[0] == '.') { continue; }
+        List *list = branchList(ctos(ptr));
         if (list == NULL) { continue; }
         Cell *cell = *list;
         while (cell != NULL) {
-            if (searchList(l, cell->data) == NULL) {
-                insertFirst(l, buildCell(cell->data));
+            if (searchList(l, ctos(cell)) == NULL) {
+                insertFirst(l, buildCell(ctos(cell)));
             }
             cell = cell->next;
         }
@@ -1109,10 +1089,10 @@ void litCheckoutBranch(char *branchName) {
 List *filterList(List *l, char *pattern) {
     List *filtered = initList();
     for (Cell *ptr = *l; ptr != NULL; ptr = ptr->next) {
-        char *c = strdup(ptr->data);
+        char *c = strdup(ctos(ptr));
         c[strlen(pattern)] = '\0';
         if (strcmp(c, pattern) == 0) {
-            insertFirst(filtered, buildCell(ptr->data));
+            insertFirst(filtered, buildCell(ctos(ptr)));
         }
         free(c);
     }
@@ -1123,7 +1103,7 @@ void litCheckoutCommit(char *pattern) {
     List *commits = getAllCommits();
     List *filteredList = filterList(commits, pattern);
     if ((*filteredList)->next == NULL) {
-        char *commit_hash = (listGet(filteredList, 0))->data;
+        char *commit_hash = ctos(listGet(filteredList, 0));
         createUpdateRef("HEAD", commit_hash);
         restoreCommit(commit_hash);
     } else {
@@ -1132,7 +1112,7 @@ void litCheckoutCommit(char *pattern) {
         } else {
             printf("Multiple matchings found : \n");
             for (Cell *ptr = *filteredList; ptr != NULL; ptr = ptr->next) {
-                printf("−> %s \n", ptr->data);
+                printf("−> %s \n", ctos(ptr));
             }
         }
     }
