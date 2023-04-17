@@ -134,13 +134,24 @@ List *stol(char *s) {
 }
 
 void ltof(List *l, char *path) {
-    FILE *fp = fopen(path, "w+");
+    FILE *fp = fopen(path, "w");
+
+    if (fp == NULL) {
+        printf("Le fichier n'a pas pu être lu.");
+        return;
+    }
+
     fputs(ltos(l), fp);
     fclose(fp);
 }
 
 List *ftol(char *path) {
     FILE *fp = fopen(path, "r");
+
+    if (fp == NULL) {
+        printf("Le fichier n'a pas pu être lu.");
+        return NULL;
+    }
 
     char *line = malloc(FILE_SIZE);
 
