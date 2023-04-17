@@ -1,57 +1,56 @@
 typedef struct cell {
-    char *data;
-    struct cell *next;
+    char* data;
+    struct cell* next;
 } Cell;
 
 typedef Cell* List;
 
 typedef struct key_value_pair {
-    char * key ;
-    char * value ;
+    char* key ;
+    char* value ;
 }kvp;
 
-typedef struct hash_table {
-    kvp ** T ;
-    int n ;
-    int size ;
-} HashTable ;
-
-typedef HashTable Commit ;
 
 //exo1
-int hashFile(char *source, char *dest);
+int hashFile(char* source, char* dest);
 
-char *sha256file(char *file);
+char* sha256file(char* file);
+
 
 //exo2
-List *initList();
+List* initList();
 
 Cell *buildCell(char *ch);
 
-void insertFirst(List *L, Cell *C);
+void insertFirst(List* L, Cell* C);
 
-char *ctos(Cell *c);
+char* ctos(Cell* c);
 
-char *ltos(List *L);
+char* ltos(List* L);
 
-Cell *listGet(List *L, int i);
+Cell* listGet(List* L, int i);
 
-Cell *searchList(List *L, char *str);
+Cell* searchList(List* L, char* str);
 
-List *stol(char *s);
+List* stol(char* s);
 
-void ltof(List *L, char *path);
+void ltof(List* L, char* path);
 
-char *magic_reallocating_fgets(char **bufp, size_t *sizep, FILE *fp);
+char* magic_reallocating_fgets(char** bufp, size_t* sizep, FILE* fp);
 
-List *ftol(char *path);
+List* ftol(char* path);
 
-List* listdir ( char* root_dir );
 
-int file_exists(char *file);
+//exo3
+List* listdir (char* root_dir);
+
+int file_exists(char* file);
 
 void cp(char* to, char* from);
 
-char* hashToPath ( char * hash );
+char* hashToPath (char* hash);
 
-void blobFile ( char* file );
+void blobFile (char* file);
+
+
+//exo6

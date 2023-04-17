@@ -36,6 +36,7 @@ char *sha256file(char *file) {
     return buffer;
 }
 
+
 //Exo 2
 List *initList() {
     return (List*)malloc(sizeof(List));
@@ -113,7 +114,8 @@ List *stol(char *s) {
 }
 
 void ltof(List *l, char *path) {
-    FILE *fp = fopen(path, "w+");
+    FILE *fp = fopen(path, "w+"); /* w+ deletes the content 
+    of the file and creates it if it doesn't exist.*/
     fputs(ltos(l), fp);
     fclose(fp);
 }
@@ -132,17 +134,14 @@ char *magic_reallocating_fgets(char **bufp, size_t *sizep, FILE *fp) {
 }
 
 List *ftol(char *path) {
-    FILE *fp = fopen(path, "r");
-
-    size_t linelen = 80;
-    char *line = (char*)malloc(linelen);
-
-    magic_reallocating_fgets(&line, &linelen, fp);
-
+    FILE *fp = fopen(path, "r+");
+    char s[256];
+    fgets(s, 256, fp);
     fclose(fp);
-
-    return stol(line);
+    List* l = stol(s);
+    return l;
 }
+
 
 //Exo 3
 List* listdir ( char* root_dir ) {
@@ -209,16 +208,20 @@ void cp(char* to, char* from) {
 }
 
 char* hashToPath ( char * hash ) {
-    char* dir = malloc ((strlen(hash) + 1 )*sizeof (char)) ;
+    /*
+    On rappelle que le chemin s’obtient en inserant
+    un ”/” entre le deuxi`eme et le troisieme caract`eres du hash.
+    */
+    char* dir = malloc((strlen(hash) + 1 )*sizeof(char)) ;
     dir[0] = hash [0];
     dir[1] = hash [1];
     dir[2] = '/' ;
     int i ;
-    for ( i = 3; i<=strlen(hash) ; i++) {
-        dir [ i ] = hash [i - 1];
+    for (i=3; i<=strlen(hash); i++) {
+        dir [i] = hash[i-1];
     }
-    dir[i] = '\0 ' ;
-    return dir ;
+    dir[i] = '\0 ';
+    return dir;
 }
 
 void blobFile ( char* file ) {
@@ -234,8 +237,8 @@ void blobFile ( char* file ) {
     cp(ch, file) ;
     }
 
-//Exo 6
 
+//Exo 6
 kvp* createKeyVal(char* key, char* val) {
     kvp* kv = (kvp*)malloc(sizeof(kvp));
     kv->key = strdup(key);
@@ -243,47 +246,44 @@ kvp* createKeyVal(char* key, char* val) {
     return kv;
 }
 
-
 void freeKeyVal(kvp* kv){
-    free(kv->key);
-    free(kv->value);
-    free(kv);
+    if (kv != NULL) {
+        free(kv->key);
+        free(kv->value);
+        free(kv);
+    }
 }
 
-char* kvts(kvp* k){
-    char* res = (char*)malloc(sizeof(char)*100);
-    strcat(res,k->key);
-    strcat(res,":");
-    strcat(res,k->value);
-    return res;
+char* kvts(kvp* k) {
+    if (k != NULL) {
+        int len_key = strlen(k->key);
+        int len_val = strlen(k->value);
+        char* str = (char*) malloc((len_key + len_val + 2) * sizeof(char));
+        sprintf(str, "%s:%s", k->key, k->value);
+        return str;
+    }
+    return NULL;
 }
 
-kvp* stkv(char* str){
-	//int init_size = strlen(str);
-
-	//char *ptr = strtok(str, ":");
-    //printf(ptr);
-	//while(ptr != NULL)
-	//{
-    //printf("'%s'\n", ptr);
-		//ptr = strtok(NULL, ":");
-	//}
-
-	/* This loop will show that there are zeroes in the str after tokenizing */
-	/*for (int i = 0; i < init_size; i++)
-	{
-		printf("%d ", str[i]); /* Convert the character to integer, in this case
-							   the character's ASCII equivalent
-	}
-	printf("\n");*/
-
-
+kvp* stkv(char* str) {
+    if (str != NULL) {
+        //Give str with : to acces the left word
+        char* key = strtok(str, ":");
+        //Give NULL with : to acces the last(right) word
+        char* val = strtok(NULL, ":");
+        if (key != NULL && val != NULL) {
+            kvp* new_kv = createKeyVal(key, val);
+            return new_kv;
+        }
+    }
+    return NULL;
 }
 
 
 int main() {
+    char* testtxt = "test.txt";
     // Test exo1
-    char *hash = sha256file("test.txt");
+    char *hash = sha256file(testtxt);
     printf("\n Data read back from temporary file is [%s]\n", hash);
     free(hash);
 
@@ -300,17 +300,23 @@ int main() {
     List *l2 = stol(stringList);
     printf("List2 data is [%s]\n", ltos(l2));
 
-    /*ltof(l, "testingC.txt");
-    List *l3 = ftol("testingC.txt");
-    printf("List3 data is [%s]\n", ltos(l3));*/
+    /* 
+    ltof(l, testtxt);
+    List *l3 = ftol(testtxt);
+    printf("List3 data is [%s]\n", ltos(l3));
+    */
 
     // Test exo3
     List* listfichiers = listdir("/home/zahra/LU2IN006");
-    //printf("Liste noms fichiers is [%s]\n", ltos(listfichiers));
-    //printf("Existence du fichier test.txt :%d\n", file_exists("projet"));
+    printf("Liste noms fichiers is [%s]\n", ltos(listfichiers));
+    printf("Existence du fichier test.txt :%d\n", file_exists(testtxt));
+    
+    char* newfile = "copie.txt";
+    cp(newfile,testtxt);
 
+    char* pathfromhash = hashToPath(sha256file(testtxt));
     // Test exo6
-    char* str1 = "clé:valeur";
+    //char* str1 = "clé:valeur";
     //kvp* kvp1 = stkv(str1);
     //printf(kvp1->key);
     //printf(kvp1->value);
