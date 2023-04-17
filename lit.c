@@ -120,6 +120,8 @@ int main(int argc, char **argv) {
             }
         }
         litCommit(argv[2], message);
+    } else if (strcmp(argv[1], "get-current-branch") == 0) {
+        printf("Current branch: %s\n", getCurrentBranch());
     } else if (strcmp(argv[1], "branch") == 0) {
         if (argc != 3) {
             printf("Usage: %s branch <name>\n", argv[0]);
