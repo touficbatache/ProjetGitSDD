@@ -1,6 +1,69 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "litCore.c"
+#include "lit.h"
+
+void acceptChanges(int hasAcceptedLocalChanges, List *conflicts, char *remoteBranch) {
+    char deletingConflictsCommitMessage[100];
+    if (hasAcceptedLocalChanges == 1) {
+        sprintf(deletingConflictsCommitMessage, "Remove conflicting files from remote branch '%s'.", remoteBranch);
+        createDeletionCommit(remoteBranch, conflicts, deletingConflictsCommitMessage);
+    } else {
+        sprintf(deletingConflictsCommitMessage, "Remove conflicting files from local branch '%s'.", getCurrentBranch());
+        createDeletionCommit(getCurrentBranch(), conflicts, deletingConflictsCommitMessage);
+    }
+}
+
+int showMergeConflictsMessage(List *conflicts, char *remoteBranch, char *message) {
+    printf("\n\nThe following files are causing merge conflicts:\n%s\n\nChoose one of these options:\n", ltosNewLine(conflicts));
+    printf("1. Accept local changes on current branch '%s'\n", getCurrentBranch());
+    printf("2. Accept changes from remote branch '%s'\n", remoteBranch);
+    printf("3. Pick files' changes individually\n");
+
+    int selectedOption;
+    printf("\nOption number: ");
+    scanf("%d", &selectedOption);
+
+    if (selectedOption == 1) {
+        acceptChanges(1, conflicts, remoteBranch);
+        merge(remoteBranch, message);
+    } else if (selectedOption == 2) {
+        acceptChanges(0, conflicts, remoteBranch);
+        merge(remoteBranch, message);
+    } else if (selectedOption == 3) {
+        printf("For each file, accept either local or remote changes.\n");
+
+        List *localChanges = initList();
+        List *remoteChanges = initList();
+        for (List *tmp = conflicts; *tmp != NULL; *tmp = (*tmp)->next) {
+            printf("\nFile: %s\n", (*tmp)->data);
+            printf("1. Accept local changes\t\t2. Accept remote changes");
+
+            int fileSelectedOption;
+            printf("\nOption number: ");
+            scanf("%d", &fileSelectedOption);
+
+            if (fileSelectedOption == 1) {
+                insertFirst(localChanges, buildCell((*tmp)->data));
+            } else if (fileSelectedOption == 2) {
+                insertFirst(remoteChanges, buildCell((*tmp)->data));
+            }
+        }
+
+        acceptChanges(1, localChanges, remoteBranch);
+        acceptChanges(0, remoteChanges, remoteBranch);
+
+        merge(remoteBranch, message);
+
+        free(remoteChanges);
+        free(localChanges);
+    } else {
+        printf("Unrecognized option.\n");
+        return showMergeConflictsMessage(conflicts, remoteBranch, message);
+    }
+
+    return 0;
+}
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -69,7 +132,7 @@ int main(int argc, char **argv) {
             return 1;
         }
         printBranch(argv[2]);
-    } else if (strcmp(argv[1], "checkout−branch") == 0) {
+    } else if (strcmp(argv[1], "checkout-branch") == 0) {
         if (argc != 3) {
             printf("Usage: %s checkout-branch <name>\n", argv[0]);
             return 1;
@@ -81,6 +144,17 @@ int main(int argc, char **argv) {
             return 1;
         }
         litCheckoutCommit(argv[2]);
+    } else if (strcmp(argv[1], "merge") == 0) {
+        if (argc != 4) {
+            printf("Usage: %s merge <branch> <message>\n", argv[0]);
+            return 1;
+        }
+        List *conflicts = merge(argv[2], argv[3]);
+        if (conflicts == NULL) {
+            printf("Successfully merged '%s' into '%s'.\nCommit message: \"%s\".\n", argv[2], getCurrentBranch(), argv[3]);
+        } else {
+            return showMergeConflictsMessage(conflicts, argv[2], argv[3]);
+        }
     } else {
         printf("Unrecognized command: %s\n", argv[1]);
         return 1;

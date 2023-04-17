@@ -1,26 +1,32 @@
-# Makefile pour lit.c et lit.h
-
 CC = gcc
 CFLAGS = -Wall -g
+LDFLAGS = -lm
 
-# Source file and header file
-SRC = lit.c
-HEADER = lit.h
+SRCDIR = .
+OBJDIR = obj
+BINDIR = .
 
-# Output binary
-TARGET = lit
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
+DEPS = $(OBJS:.o=.d)
 
-# Default target
-all: $(TARGET)
+TARGETS = $(BINDIR)/lit $(BINDIR)/litTest
 
-# Linking
-$(TARGET): $(SRC)
-	$(CC) $(CFLAGS) -o $@ $<
+all: $(TARGETS)
 
-# Compilation
-%.o: %.c $(HEADER)
-	$(CC) $(CFLAGS) -c $<
+$(BINDIR)/lit: $(OBJDIR)/lit.o $(OBJDIR)/litCore.o
+	$(CC) $(CFLAGS) $^ -o $@
 
-# Clean
+$(BINDIR)/litTest: $(OBJDIR)/litTest.o $(OBJDIR)/litCore.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
 clean:
-	rm -f $(TARGET) *.o
+	rm -rf $(OBJDIR) $(TARGETS)
+
+-include $(DEPS)

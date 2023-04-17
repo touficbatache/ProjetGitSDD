@@ -46,6 +46,8 @@ char *ctos(Cell *c);
 
 char *ltos(List *L);
 
+char *ltosNewLine(List *l);
+
 Cell *listGet(List *L, int i);
 
 Cell *searchList(List *L, char *str);
@@ -65,7 +67,11 @@ int file_exists(char *file);
 
 void cp(char *to, char *from);
 
-char *hashToPath(char *hash);
+char *hashToBlobPath(char *hash);
+
+char *hashToPathWorkTree(char *hash);
+
+char *hashToPathCommit(char *hash);
 
 void blobFile(char *file);
 
@@ -113,6 +119,8 @@ char *saveWorkTree(WorkTree *wt, char *path);
 
 int isWorkTree(char *hash);
 
+void freeWorkFile(WorkFile *wf);
+
 void freeWorkTree(WorkTree *wt);
 
 void restoreWorkTree(WorkTree *wt, char *path);
@@ -130,7 +138,7 @@ Commit *initCommit();
 
 Commit *createCommit(char *hash);
 
-unsigned long hash(unsigned char *str);
+unsigned long hash(char *str);
 
 void commitSet(Commit *c, char *key, char *value);
 
@@ -151,9 +159,9 @@ void freeCommit(Commit *c);
 //exo7
 void litInit();
 
-void createUpdateRef(char *ref_name, char *hash);
+void createUpdateRef(char *refName, char *hash);
 
-void deleteRef(char *ref_name);
+void deleteRef(char *refName);
 
 char *getRef(char *ref_name);
 
@@ -174,10 +182,26 @@ void createBranch(char *branch);
 
 char *getCurrentBranch();
 
-char *hashToPathCommit(char *hash);
-
 void printBranch(char *branch);
 
 List *branchList(char *branch);
 
 List *getAllCommits();
+
+//exo9
+void restoreCommit(char *commitHash);
+
+void litCheckoutBranch(char *branchName);
+
+List *filterList(List *l, char *pattern);
+
+void litCheckoutCommit(char *pattern);
+
+//exo11
+WorkTree *mergeWorkTrees(WorkTree *wt1, WorkTree *wt2, List **conflicts);
+
+void litCommitMerge(char *currentBranchName, char *remoteBranchName, WorkTree *wt, char *message);
+
+List *merge(char *remote_branch, char *message);
+
+void createDeletionCommit(char *branch, List *conflicts, char *message);

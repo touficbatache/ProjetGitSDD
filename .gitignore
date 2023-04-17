@@ -9,7 +9,5 @@
 
 /.idea
 
-/*.txt
-!/test.txt
 /*.o
 /main.dSYM

@@ -90,6 +90,27 @@ char *ltos(List *l) {
     tmp = *l;
     while (tmp) {
         if (strlen(str) > 0) {
+            strcat(str, "\n");
+        }
+        strcat(str, ctos(tmp));
+        tmp = tmp->next;
+    }
+    return str;
+}
+
+char *ltosNewLine(List *l) {
+    unsigned long strLen = 0;
+    List tmp = *l;
+    while (tmp) {
+        strLen += strlen(ctos(tmp)) + 1;
+        tmp = tmp->next;
+    }
+    strLen -= 1;
+
+    char *str = calloc(strLen, sizeof(char));
+    tmp = *l;
+    while (tmp) {
+        if (strlen(str) > 0) {
             strcat(str, "|");
         }
         strcat(str, ctos(tmp));
@@ -223,10 +244,10 @@ void cp(char *to, char *from) {
     fclose(fp2);
 }
 
-char *hashToPath(char *hash) {
+char *hashToBlobPath(char *hash) {
     char *path = malloc(sizeof(char) * (strlen(hash) + 2));
     if (path == NULL) {
-        perror("hashToPath: Error allocating memory");
+        perror("hashToBlobPath: Error allocating memory");
         return NULL;
     }
 
@@ -234,7 +255,21 @@ char *hashToPath(char *hash) {
     path[2] = '/';
     strcpy(path + 3, hash + 2);
 
-    return addLitBlobPath(path);
+    char *blobPath = addLitBlobPath(path);
+    free(path);
+    return blobPath;
+}
+
+char *hashToPathWorkTree(char *hash) {
+    char *buff = malloc(sizeof(char) * 100);
+    sprintf(buff, "%s.t", hashToBlobPath(hash));
+    return buff;
+}
+
+char *hashToPathCommit(char *hash) {
+    char *buff = malloc(sizeof(char) * 100);
+    sprintf(buff, "%s.c", hashToBlobPath(hash));
+    return buff;
 }
 
 void blobFile(char *file) {
@@ -243,16 +278,18 @@ void blobFile(char *file) {
     char *ch2 = strdup(hash);
     ch2[2] = '\0';
     char *location = addLitBlobPath(ch2);
-    if (stat(location, &st) == -1) {
+    if (!file_exists(location)) {
         char buff[100];
         sprintf(buff, "mkdir -p %s", location);
         system(buff);
     }
-    char *ch = hashToPath(hash);
+    char *ch = hashToBlobPath(hash);
     cp(ch, file);
 
-    free(hash);
     free(ch);
+    free(location);
+    free(ch2);
+    free(hash);
 }
 
 // Exo4
@@ -339,11 +376,6 @@ WorkFile *stwf(char *ch) {
 
     WorkFile *wf = createWorkFile(name);
     free(name);
-
-//    if (strcmp(hash, "(null)") != 0) {
-//        wf->hash = strdup(hash);
-//    }
-
     wf->hash = hash;
     wf->mode = mode;
     return wf;
@@ -384,8 +416,12 @@ int appendWorkTree(WorkTree *wt, char *name, char *hash, int mode) {
         return 1;
     }
 
-    wt->tab[wt->n].name = strdup(name);
-    wt->tab[wt->n].hash = (hash != NULL) ? strdup(hash) : NULL;
+    if (name != NULL) {
+        wt->tab[wt->n].name = strdup(name);
+    }
+    if (hash != NULL) {
+        wt->tab[wt->n].hash = strdup(hash);
+    }
     wt->tab[wt->n].mode = mode;
 
     wt->n++;
@@ -415,6 +451,7 @@ WorkTree *stwt(char *ch) {
     while (wfs != NULL) {
         WorkFile *wf = stwf(wfs);
         appendWorkTree(wt, wf->name, wf->hash, wf->mode);
+        freeWorkFile(wf);
         wfs = strtok(NULL, "\n");
     }
 
@@ -428,17 +465,18 @@ int wttf(WorkTree *wt, char *file) {
         return -1;
     }
 
-    fputs(wtts(wt), fp);
+    char *wts = wtts(wt);
+    fputs(wts, fp);
     fclose(fp);
+
+    free(wts);
     return 0;
 }
 
 WorkTree *ftwt(char *file) {
     FILE *fp = fopen(file, "r");
 
-    if (fp == NULL) {
-        return NULL;
-    }
+    if (fp == NULL) return NULL;
 
     char *lines = calloc(FILE_SIZE * WORKTREE_SIZE, sizeof(char));
 
@@ -461,11 +499,12 @@ char *hashToFile(char *hash) {
     char *ch2 = strdup(hash);
     ch2[2] = '\0';
     char *location = addLitBlobPath(ch2);
-    if (stat(location, &st) == -1) {
+    if (!file_exists(location)) {
         mkdir(location, 0700);
-        free(location);
     }
-    return hashToPath(hash);
+    free(location);
+    free(ch2);
+    return hashToBlobPath(hash);
 }
 
 char *blobWorkTree(WorkTree *wt) {
@@ -488,7 +527,7 @@ char *blobWorkTree(WorkTree *wt) {
 }
 
 char *joinPath(char *path1, char *path2) {
-    char *result = malloc(strlen(path1) + strlen(path2) + 1);
+    char *result = malloc(100);
     if (result == NULL) {
         printf("Error: unable to allocate memory\n");
         return NULL;
@@ -540,7 +579,7 @@ char *saveWorkTree(WorkTree *wt, char *path) {
             for (Cell *ptr = *l; ptr != NULL; ptr = ptr->next) {
                 if (ptr->data[0] == '.') { continue; }
 
-                appendWorkTree(newWt, ptr->data, 0, NULL);
+                appendWorkTree(newWt, ptr->data, NULL, 0);
             }
 
             // Save the hash and mode of the sub-WorkTree in WF
@@ -555,33 +594,32 @@ char *saveWorkTree(WorkTree *wt, char *path) {
 }
 
 int isWorkTree(char *hash) {
-    if (file_exists(strcat(hashToPath(hash), ".t"))) {
+    if (file_exists(strcat(hashToBlobPath(hash), ".t"))) {
         return 1;
     }
-    if (file_exists(hashToPath(hash))) {
+    if (file_exists(hashToBlobPath(hash))) {
         return 0;
     }
     return -1;
 }
 
+void freeWorkFile(WorkFile *wf) {
+    free(wf->name);
+    free(wf->hash);
+}
+
 void freeWorkTree(WorkTree *wt) {
     for (int i = 0; i < wt->n; i++) {
-        WorkFile *wf = &(wt->tab[i]);
-        if (isWorkTree(wf->hash)) {
-            WorkTree *nwt = ftwt(hashToPath(wf->hash));
-            freeWorkTree(nwt);
-            free(nwt);
-        }
-        free(wf->name);
-        free(wf);
+        freeWorkFile(&(wt->tab[i]));
     }
+    free(wt->tab);
     free(wt);
 }
 
 void restoreWorkTree(WorkTree *wt, char *path) {
     for (int i = 0; i < wt->n; i++) {
         char *workingDirectoryPath = joinPath(path, wt->tab[i].name);
-        char *litPath = hashToPath(wt->tab[i].hash);
+        char *litPath = hashToBlobPath(wt->tab[i].hash);
         char *hash = wt->tab[i].hash;
         int chmod = wt->tab[i].mode;
         if (isWorkTree(hash) == 0) { //si c’est un fichier
@@ -608,8 +646,12 @@ kvp *createKeyVal(char *key, char *val) {
         return NULL;
     }
 
-    k->key = strdup(key);
-    k->value = strdup(val);
+    if (key != NULL) {
+        k->key = strdup(key);
+    }
+    if (val != NULL) {
+        k->value = strdup(val);
+    }
     return k;
 }
 
@@ -631,9 +673,7 @@ kvp *stkv(char *str) {
 
     sscanf(str, "%s : %[^\0]", key, val);
 
-    kvp *elem = createKeyVal(key, val);
-
-    return elem;
+    return createKeyVal(key, val);
 }
 
 Commit *initCommit() {
@@ -659,7 +699,7 @@ Commit *createCommit(char *hash) {
     return c;
 }
 
-unsigned long hash(unsigned char *str) {
+unsigned long hash(char *str) {
     unsigned long hash = 5381;
     int c;
 
@@ -718,6 +758,7 @@ Commit *stc(char *ch) {
     while (cs != NULL) {
         kvp *elem = stkv(cs);
         commitSet(c, elem->key, elem->value);
+        freeKeyVal(elem);
         cs = strtok(NULL, "\n");
     }
 
@@ -778,7 +819,7 @@ char *blobCommit(Commit *c) {
 }
 
 void freeCommit(Commit *c) {
-    for (int i = 0; i < c->size; i++) {
+    for (int i = 0; i < c->n; i++) {
         kvp *pair = c->T[i];
         if (pair != NULL) {
             free(pair->key);
@@ -791,14 +832,19 @@ void freeCommit(Commit *c) {
 }
 
 //exo7
-void createUpdateRef(char *ref_name, char *hash) {
+void createUpdateRef(char *refName, char *hash) {
     char buff[100];
-    sprintf(buff, "echo %s > %s", hash, addLitRefsPath(ref_name));
+    char *path = addLitRefsPath(refName);
+    if (hash == NULL) {
+        hash = "";
+    }
+    sprintf(buff, "echo %s > %s", hash, path);
     system(buff);
+    free(path);
 }
 
-void deleteRef(char *ref_name) {
-    char *path = addLitRefsPath(ref_name);
+void deleteRef(char *refName) {
+    char *path = addLitRefsPath(refName);
 
     char buff[256];
     sprintf(buff, "%s", path);
@@ -870,7 +916,7 @@ void litAdd(char *file_or_folder) {
 
     // Add file or folder to staging area
     if (file_exists(file_or_folder)) {
-        appendWorkTree(wt, file_or_folder, 0, NULL);
+        appendWorkTree(wt, file_or_folder, NULL, 0);
         wttf(wt, ".lit/add");
     } else {
         printf("File or folder %s does not exist\n", file_or_folder);
@@ -886,7 +932,7 @@ void litPrintStagingArea() {
 }
 
 void litClearStagingArea() {
-    system("rm .lit/add");
+    if (file_exists(".lit/add")) system("rm .lit/add");
 }
 
 void litCommit(char *branchName, char *message) {
@@ -899,36 +945,40 @@ void litCommit(char *branchName, char *message) {
 
     if (!file_exists(buff)) {
         printf("La branche n'existe pas\n");
-        return;
+    } else {
+        char *last_hash = getRef(branchName);
+        char *head_hash = getRef("HEAD");
+        if (strcmp(last_hash, head_hash) != 0) {
+            printf("HEAD doit pointer sur le commit de la branche\n");
+        } else {
+            WorkTree *wt = ftwt(".lit/add");
+            if (wt == NULL) wt = initWorkTree();
+            char *hashWt = saveWorkTree(wt, ".");
+
+            Commit *c = createCommit(hashWt);
+            if (strlen(last_hash) != 0) {
+                commitSet(c, "predecessor", last_hash);
+            }
+            if (message != NULL) {
+                commitSet(c, "message", message);
+            }
+
+            char *hashC = blobCommit(c);
+            createUpdateRef(branchName, hashC);
+            createUpdateRef("HEAD", hashC);
+            litClearStagingArea();
+
+            free(hashC);
+            freeCommit(c);
+            free(hashWt);
+            freeWorkTree(wt);
+        }
+
+        free(head_hash);
+        free(last_hash);
     }
 
-    char *last_hash = getRef(branchName);
-    char *head_hash = getRef("HEAD");
-    if (strcmp(last_hash, head_hash) != 0) {
-        printf("HEAD doit pointer sur le commit de la branche\n");
-        return;
-    }
-
-    WorkTree *wt = ftwt(".lit/add");
-    char *hashWt = saveWorkTree(wt, ".");
-
-    Commit *c = createCommit(hashWt);
-    if (strlen(last_hash) != 0) {
-        commitSet(c, "predecessor", last_hash);
-    }
-    if (message != NULL) {
-        commitSet(c, "message", message);
-    }
-
-    char *hashC = blobCommit(c);
-    createUpdateRef(branchName, hashC);
-    createUpdateRef("HEAD", hashC);
-    system("rm .lit/add");
-
-    free(hashC);
     free(branchPath);
-    free(head_hash);
-    free(last_hash);
 }
 
 //exo 8
@@ -951,12 +1001,6 @@ char *getCurrentBranch() {
     FILE *f = fopen(".lit/current_branch", "r");
     char *buff = calloc(100, sizeof(char));
     fscanf(f, "%s", buff);
-    return buff;
-}
-
-char *hashToPathCommit(char *hash) {
-    char *buff = malloc(sizeof(char) * 100);
-    sprintf(buff, "%s.c", hashToPath(hash));
     return buff;
 }
 
@@ -1034,7 +1078,7 @@ void restoreCommit(char *commitHash) {
     Commit *c = ftc(commitPath);
 
     char *treeHash = commitGet(c, "tree");
-    char *treePath = hashToPath(treeHash);
+    char *treePath = hashToBlobPath(treeHash);
     strcat(treePath, ".t");
 
     WorkTree *wt = ftwt(treePath);
@@ -1058,6 +1102,8 @@ void litCheckoutBranch(char *branchName) {
     char *commitHash = getRef(branchName);
     createUpdateRef("HEAD", commitHash);
     restoreCommit(commitHash);
+
+    free(commitHash);
 }
 
 List *filterList(List *l, char *pattern) {
@@ -1090,4 +1136,171 @@ void litCheckoutCommit(char *pattern) {
             }
         }
     }
+}
+
+//exo11
+WorkTree *mergeWorkTrees(WorkTree *wt1, WorkTree *wt2, List **conflicts) {
+    WorkTree *mergedWorkTree = initWorkTree();
+
+    for (int i = 0; i < wt1->n; i++) {
+        int foundConflict = 0;
+        for (int j = 0; j < wt2->n; j++) {
+            // If the names are the same and hashes are different, add the file to the conflicts list
+            if (strcmp(wt1->tab[i].name, wt2->tab[j].name) == 0 && strcmp(wt1->tab[i].hash, wt2->tab[j].hash) != 0) {
+                foundConflict = 1;
+                insertFirst(*conflicts, buildCell(wt1->tab[i].name));
+                break;
+            }
+        }
+
+        if (!foundConflict && inWorkTree(mergedWorkTree, wt1->tab[i].name) == -1) {
+            appendWorkTree(mergedWorkTree, wt1->tab[i].name, wt1->tab[i].hash, wt1->tab[i].mode);
+        }
+    }
+    for (int i = 0; i < wt2->n; i++) {
+        if (inWorkTree(mergedWorkTree, wt2->tab[i].name) == -1 && searchList(*conflicts, wt2->tab[i].name) == NULL) {
+            appendWorkTree(mergedWorkTree, wt2->tab[i].name, wt2->tab[i].hash, wt2->tab[i].mode);
+        }
+    }
+
+    return mergedWorkTree;
+}
+
+void litCommitMerge(char *currentBranchName, char *remoteBranchName, WorkTree *wt, char *message) {
+    litInit();
+
+    char *branchPath = addLitRefsPath(currentBranchName);
+
+    char buff[256];
+    sprintf (buff, "%s", branchPath);
+
+    if (!file_exists(buff)) {
+        printf("La branche n'existe pas\n");
+    } else {
+        char *currentBranchLastHash = getRef(currentBranchName);
+        char *headLastHash = getRef("HEAD");
+        if (strcmp(currentBranchLastHash, headLastHash) != 0) {
+            printf("HEAD doit pointer sur le commit de la branche\n");
+        } else {
+            char *remoteBranchLastHash = getRef(remoteBranchName);
+
+            char *hashWt = blobWorkTree(wt);
+
+            Commit *c = createCommit(hashWt);
+            if (strlen(currentBranchLastHash) != 0) {
+                commitSet(c, "predecessor", currentBranchLastHash);
+            }
+            if (strlen(remoteBranchLastHash) != 0) {
+                commitSet(c, "merged_predecessor", remoteBranchLastHash);
+            }
+            if (message != NULL) {
+                commitSet(c, "message", message);
+            }
+
+            char *hashC = blobCommit(c);
+            createUpdateRef(currentBranchName, hashC);
+            createUpdateRef("HEAD", hashC);
+
+            deleteRef(remoteBranchName);
+
+            restoreWorkTree(wt, ".");
+
+            free(hashC);
+            freeCommit(c);
+            free(hashWt);
+            free(remoteBranchLastHash);
+        }
+
+        free(headLastHash);
+        free(currentBranchLastHash);
+    }
+
+    free(branchPath);
+}
+
+List *merge(char *remoteBranch, char *message) {
+    char *currentBranch = getCurrentBranch();
+    char *currentBranchRef = getRef(currentBranch);
+    char *currentBranchBlobPath = hashToPathCommit(currentBranchRef);
+    Commit *currentBranchLatestCommit = ftc(currentBranchBlobPath);
+    char *currentBranchLatestCommitHash = commitGet(currentBranchLatestCommit, "tree");
+    char *currentBranchWorkTreeBlobPath = hashToPathWorkTree(currentBranchLatestCommitHash);
+    WorkTree *currentBranchWorkTree = ftwt(currentBranchWorkTreeBlobPath);
+
+    char *remoteBranchRef = getRef(remoteBranch);
+    char *remoteBranchBlobPath = hashToPathCommit(remoteBranchRef);
+    Commit *remoteBranchLatestCommit = ftc(remoteBranchBlobPath);
+    char *remoteBranchLatestCommitHash = commitGet(remoteBranchLatestCommit, "tree");
+    char *remoteBranchWorkTreeBlobPath = hashToPathWorkTree(remoteBranchLatestCommitHash);
+    WorkTree *remoteBranchWorkTree = ftwt(remoteBranchWorkTreeBlobPath);
+
+    List *conflicts = initList();
+    WorkTree *mergedWorkTree = mergeWorkTrees(
+            currentBranchWorkTree,
+            remoteBranchWorkTree,
+            &conflicts
+    );
+
+    if (*conflicts == NULL) {
+        litCommitMerge(getCurrentBranch(), remoteBranch, mergedWorkTree, message);
+    }
+
+    freeWorkTree(mergedWorkTree);
+
+    freeWorkTree(remoteBranchWorkTree);
+    free(remoteBranchWorkTreeBlobPath);
+    free(remoteBranchLatestCommitHash);
+    freeCommit(remoteBranchLatestCommit);
+    free(remoteBranchBlobPath);
+    free(remoteBranchRef);
+
+    freeWorkTree(currentBranchWorkTree);
+    free(currentBranchWorkTreeBlobPath);
+    free(currentBranchLatestCommitHash);
+    freeCommit(currentBranchLatestCommit);
+    free(currentBranchBlobPath);
+    free(currentBranchRef);
+    free(currentBranch);
+
+    if (*conflicts != NULL) {
+        printf("Error: Merge conflicts must be resolved before merging.");
+        return conflicts;
+    }
+
+    freeList(conflicts);
+
+    return NULL;
+}
+
+void createDeletionCommit(char *branch, List *conflicts, char *message) {
+    char *currentBranch = getCurrentBranch();
+
+    litCheckoutBranch(branch);
+
+    char *branchRef = getRef(branch);
+    char *branchBlobPath = hashToPathCommit(branchRef);
+    Commit *branchLatestCommit = ftc(branchBlobPath);
+    char *branchLatestCommitHash = commitGet(branchLatestCommit, "tree");
+    char *branchWorkTreeBlobPath = hashToPathWorkTree(branchLatestCommitHash);
+    WorkTree *branchWorkTree = ftwt(branchWorkTreeBlobPath);
+
+    litClearStagingArea();
+
+    for (int i = 0; i < branchWorkTree->n; i++) {
+        if (searchList(conflicts, branchWorkTree->tab[i].name) == NULL) {
+            litAdd(branchWorkTree->tab[i].name);
+        }
+    }
+
+    litCommit(branch, message);
+
+    litCheckoutBranch(currentBranch);
+
+    freeWorkTree(branchWorkTree);
+    free(branchWorkTreeBlobPath);
+    free(branchLatestCommitHash);
+    freeCommit(branchLatestCommit);
+    free(branchBlobPath);
+    free(branchRef);
+    free(currentBranch);
 }
